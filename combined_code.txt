@@ -1,0 +1,2647 @@
+ALL THE CODE FILE HAS BEEN SEPARATED BY THE "FILE THEN FOLLOWED BY THE NAME OF THE FILE"
+Run order:
+1. generate_emails.py
+2. merge_datasets (needs email.csv(synthetic emails) and phishing_emails.csv (real life dataset)
+3. split_dataset.py 
+4. train_random_forest.py
+5. train_distilbert.py
+6. evaluate_and_plot.py
+7. analyse_errors.py
+8. analyse_errors_by_source.py
+9. edge_case_stress_test.py
+10. interpret_models.py
+11. print_evaluation_summary.py
+12. cli_tool.py
+13. streamlit_app.py
+
+FILE generate_emails.py
+
+import random
+import csv
+
+names = [
+    "Sarah", "James", "Priya", "Michael", "Aisha",
+    "David", "Emma", "Jay", "Ashish", "Danny",
+    "Olivia", "Leonard", "May", "Lucas", "Janie",
+    "Noah", "Layla", "Ethan", "Sofia", "Arjun",
+    "Grace", "Thomas", "Nadia", "Ryan", "Mavi",
+    "Rohan", "Charlotte", "Vikram", "Raj", "Aditya",
+    "Mark", "Karan", "Penny", "Nikhil", "Florence",
+    "Ishaan", "Amelia", "Rahul", "Isla", "Varun",
+    "Daisy", "Siddharth", "Tom", "Ananya", "George",
+    "Kavya", "Oliver", "Meera", "Henry", "Divya"
+]
+courses = [
+    "Python for Data Science", "Introduction to Machine Learning", "Cybersecurity Fundamentals",
+    "Digital Marketing Basics", "Financial Accounting", "Introduction to Psychology",
+    "Web Development with JavaScript", "Project Management Essentials", "Data Analysis with Excel",
+    "Public Speaking Skills", "Introduction to Artificial Intelligence", "Graphic Design Principles",
+    "Business Strategy Fundamentals", "Cloud Computing Basics", "Statistics for Beginners",
+    "UX Design Foundations", "Introduction to SQL", "Content Writing Essentials",
+    "Negotiation Skills", "Personal Finance Management"
+]
+
+#legitimate emails
+amazon_subjects = [
+    "Your order has shipped",
+    "Order confirmation: {order_id}",
+    "Your package is on its way",
+    "Delivery update for your recent order",
+    "Your order is out for delivery",
+    "Order {order_id} has been dispatched",
+    "Your Amazon order summary",
+    "Track your package: {order_id}",
+    "Your order will arrive soon",
+    "Thanks for your order, {name}",
+    "Good news — your order is on its way",
+    "Your recent purchase has been confirmed",
+    "Shipping confirmation for order {order_id}",
+    "Your delivery is scheduled for {date}",
+    "Order update: your items are packed",
+    "Your order is being prepared",
+    "Dispatch confirmation: {order_id}",
+    "Your parcel is on its way to you",
+    "Order {order_id} is now with the courier",
+    "You'll receive your order by {date}"
+]
+
+amazon_bodies = [
+    "Hi {name}, your order {order_id} has shipped and is on its way. Track your package here: {link}",
+    "Hello {name}, thank you for your order. Your items will arrive by {date}. View order details: {link}",
+    "Hi {name}, your recent purchase is confirmed. Order total: {amount}. Track shipment: {link}",
+    "Hi {name}, your order {order_id} is out for delivery and should arrive {date}. Track here: {link}",
+    "Hello {name}, here is a summary of your recent order. Total charged: {amount}. View details: {link}",
+    "Hi {name}, good news — your package is on schedule for delivery {date}. Track it here: {link}",
+    "Hello {name}, your order {order_id} has been packed and dispatched. Expected arrival: {date}. Track: {link}",
+    "Hi {name}, thanks for shopping with us. Your order total was {amount}. View your invoice: {link}",
+    "Hello {name}, just a quick update — your delivery is on track for {date}. Details here: {link}",
+    "Hi {name}, your order {order_id} is being prepared for delivery. Track progress here: {link}",
+    "Hello {name}, we are pleased to confirm your order has been dispatched. Estimated delivery: {date}. Track: {link}",
+    "Hi {name}, your parcel is now with the courier. You should receive it by {date}. Track here: {link}",
+    "Hello {name}, your order of {amount} is confirmed and on its way. View full details: {link}",
+    "Hi {name}, a quick heads-up that your order {order_id} leaves our warehouse today. Track: {link}",
+    "Hello {name}, your recent order has been successfully processed and dispatched. Details: {link}",
+    "Hi {name}, your delivery is scheduled for {date}. You can track your parcel here: {link}",
+    "Hello {name}, we have confirmed your order and it is now on its way to you. Total: {amount}. Track: {link}",
+    "Hi {name}, your order {order_id} is packed and ready. The courier will collect it {date}. Track: {link}",
+    "Hello {name}, great news — your order has left our fulfilment centre. Estimated arrival: {date}. Details: {link}",
+    "Hi {name}, your purchase of {amount} is confirmed. Your order {order_id} is now in transit. Track: {link}"
+    "Hi {name}, please confirm your email address to continue receiving LinkedIn notifications: {link}",
+    "Hello {name}, action required: please review and update your LinkedIn profile details: {link}",
+    "Hi {name}, please verify your account to continue accessing LinkedIn premium features: {link}",
+    "Hello {name}, we need you to confirm your identity to keep your LinkedIn account secure: {link}",
+    "Hi {name}, please review your account settings and confirm your preferences here: {link}"
+    "Hi {name}, please confirm your delivery address for order {order_id} to ensure successful delivery: {link}",
+    "Hello {name}, action required: please review your recent order {order_id} and confirm the details are correct: {link}",
+    "Hi {name}, please update your payment method to complete your pending order of {amount}: {link}",
+    "Hello {name}, we need you to confirm your order {order_id} before we can dispatch your items: {link}",
+    "Hi {name}, please verify your delivery address for your upcoming order. Confirm here to avoid delays: {link}"
+]
+
+linkedin_subjects = [
+    "{name} viewed your profile",
+    "You have a new connection request",
+    "Your weekly LinkedIn digest",
+    "New message from {name}",
+    "Someone is looking at your profile",
+    "You have unread notifications",
+    "Your network is growing",
+    "New job recommendations for you",
+    "{name} mentioned you in a post",
+    "Your profile views this week",
+    "People are finding your profile",
+    "You have a pending connection request",
+    "{name} endorsed your skills",
+    "New opportunities matching your profile",
+    "Your connection request was accepted",
+    "People you may know on LinkedIn",
+    "{name} commented on your post",
+    "Your post is getting noticed",
+    "Weekly summary: your LinkedIn activity",
+    "You appeared in search results this week"
+
+]
+
+linkedin_bodies = [
+    "Hi {name}, you have a new connection request waiting. View it here: {link}",
+    "Hello {name}, your profile was viewed 5 times this week. See who is interested: {link}",
+    "Hi {name}, you have a new message waiting in your inbox. Read it here: {link}",
+    "Hello {name}, several people have viewed your profile recently. Check who: {link}",
+    "Hi {name}, you have unread notifications waiting. Catch up here: {link}",
+    "Hello {name}, your network has grown this week. See your new connections: {link}",
+    "Hi {name}, we found some job recommendations that match your profile. View them here: {link}",
+    "Hello {name}, you were mentioned in a recent post. See it here: {link}",
+    "Hi {name}, here is your weekly summary of profile activity: {link}",
+    "Hello {name}, someone from your industry just viewed your profile. Check it out: {link}",
+    "Hi {name}, your skills were endorsed by a connection this week. View your profile: {link}",
+    "Hello {name}, your connection request has been accepted. View their profile here: {link}",
+    "Hi {name}, you appeared in search results this week. See who found you: {link}",
+    "Hello {name}, we have found people you may know on LinkedIn. Connect here: {link}",
+    "Hi {name}, your recent post is gaining traction. See the engagement here: {link}",
+    "Hello {name}, new job opportunities matching your experience have been posted. View: {link}",
+    "Hi {name}, a connection commented on your post recently. Read the thread here: {link}",
+    "Hello {name}, your profile activity summary for this week is ready. View it: {link}",
+    "Hi {name}, you have a pending connection request from someone in your field. View: {link}",
+    "Hello {name}, your LinkedIn digest for this week is ready. Catch up here: {link}"
+    "Hi {name}, please confirm your email address to continue receiving LinkedIn notifications: {link}",
+    "Hello {name}, action required: please review and update your LinkedIn profile details: {link}",
+    "Hi {name}, please verify your account to continue accessing LinkedIn premium features: {link}",
+    "Hello {name}, we need you to confirm your identity to keep your LinkedIn account secure: {link}",
+    "Hi {name}, please review your account settings and confirm your preferences here: {link}"
+]
+
+coursera_subjects = [
+    "Continue your course: {course}",
+    "New assignment posted in {course}",
+    "Your certificate is ready",
+    "Reminder: complete your weekly lesson",
+    "Your progress in {course}",
+    "New course recommendation for you",
+    "Do not lose your learning streak",
+    "Upcoming deadline for {course}",
+    "New content available in {course}",
+    "Your weekly learning summary",
+    "You are close to finishing {course}",
+    "Your quiz results for {course}",
+    "New discussion post in {course}",
+    "Your instructor left feedback in {course}",
+    "Module unlocked in {course}",
+    "Resume where you left off in {course}",
+    "Your peer review is ready in {course}",
+    "Congratulations on completing a module",
+    "Your course progress report: {course}",
+    "New video lesson available in {course}"
+]
+
+coursera_bodies = [
+    "Hi {name}, you are making great progress in {course}. Continue learning here: {link}",
+    "Hello {name}, a new assignment has been posted in {course}. View it here: {link}",
+    "Hi {name}, your certificate for {course} is ready to download: {link}",
+    "Hello {name}, do not forget to complete this week's lesson in {course}. Continue here: {link}",
+    "Hi {name}, here is a quick look at your progress in {course} so far. View details: {link}",
+    "Hello {name}, based on your interests, we recommend a new course. Explore it here: {link}",
+    "Hi {name}, you are on a learning streak. Keep it going with {course}: {link}",
+    "Hello {name}, your assignment for {course} is due soon. Submit it here: {link}",
+    "Hi {name}, new content has just been added to {course}. Check it out: {link}",
+    "Hello {name}, here is your weekly learning summary across all your courses: {link}",
+    "Hi {name}, you are close to finishing {course}. Just a few lessons left: {link}",
+    "Hello {name}, your quiz results for {course} are now available. View them here: {link}",
+    "Hi {name}, there is a new discussion thread in {course} you may want to join: {link}",
+    "Hello {name}, your instructor left feedback on your recent submission in {course}: {link}",
+    "Hi {name}, a new module has been unlocked in {course}. Start it here: {link}",
+    "Hello {name}, pick up where you left off in {course}. Resume here: {link}",
+    "Hi {name}, your peer review submission is ready to view in {course}: {link}",
+    "Hello {name}, congratulations on completing a module in {course}. Keep going: {link}",
+    "Hi {name}, here is your course progress report for {course} this week: {link}",
+    "Hello {name}, a new video lesson is available in {course}. Watch it here: {link}"
+    "Hi {name}, please confirm your enrolment in {course} to secure your place: {link}",
+    "Hello {name}, action required: please review and submit your assignment for {course} before the deadline: {link}",
+    "Hi {name}, please verify your account details to continue accessing {course}: {link}",
+    "Hello {name}, please confirm your course preferences for {course} to continue your learning: {link}",
+    "Hi {name}, we need you to review and confirm your progress in {course}: {link}"    
+]
+
+paypal_subjects = [
+    "You sent a payment of {amount}",
+    "Payment confirmation: {amount}",
+    "Your PayPal receipt",
+    "You have received a payment",
+    "Your transaction summary",
+    "Payment to {name} successful",
+    "Your account activity update",
+    "A payment was made from your account",
+    "Your monthly PayPal summary",
+    "Receipt for your recent transaction",
+    "Your payment of {amount} is complete",
+    "Money sent: {amount}",
+    "Transaction confirmed: {amount}",
+    "You have a new PayPal notification",
+    "Your PayPal balance has been updated",
+    "Payment received: {amount}",
+    "Your recent PayPal activity",
+    "Transfer of {amount} completed",
+    "Your PayPal account statement",
+    "Confirmation of your recent payment"
+]
+
+paypal_bodies = [
+    "Hi {name}, your payment of {amount} has been sent successfully. View receipt: {link}",
+    "Hello {name}, we have confirmed your recent payment of {amount}. Details here: {link}",
+    "Hi {name}, you have received a payment. Log in to view details: {link}",
+    "Hello {name}, here is your receipt for the recent transaction of {amount}. View it here: {link}",
+    "Hi {name}, your transaction summary for this month is ready. Review it here: {link}",
+    "Hello {name}, your account activity has been updated following a recent payment. Details: {link}",
+    "Hi {name}, a payment of {amount} was processed from your account. View details: {link}",
+    "Hello {name}, your monthly PayPal summary is now available. View it here: {link}",
+    "Hi {name}, thank you for your payment of {amount}. Your receipt is ready: {link}",
+    "Hello {name}, your recent transaction has been completed successfully. View receipt: {link}",
+    "Hi {name}, a transfer of {amount} has been completed from your account. Details: {link}",
+    "Hello {name}, your PayPal balance has been updated following a recent transaction: {link}",
+    "Hi {name}, money has been sent successfully. View your transaction history here: {link}",
+    "Hello {name}, you have a new notification regarding your PayPal account. View it: {link}",
+    "Hi {name}, payment of {amount} confirmed. Your updated account statement is here: {link}",
+    "Hello {name}, you have received {amount} in your PayPal account. View details: {link}",
+    "Hi {name}, here is a summary of your recent PayPal activity: {link}",
+    "Hello {name}, your recent payment of {amount} to a merchant has been processed: {link}",
+    "Hi {name}, your PayPal account statement is now ready to view and download: {link}",
+    "Hello {name}, we have processed your payment and your receipt is now available: {link}"
+    "Hi {name}, please confirm your payment details to complete your recent transaction of {amount}: {link}",
+    "Hello {name}, action required: please review and confirm your recent PayPal activity: {link}",
+    "Hi {name}, please verify your billing address to continue processing payments: {link}",
+    "Hello {name}, please update your payment method to avoid any disruption to your service: {link}",
+    "Hi {name}, we need you to confirm your recent transaction of {amount} was authorised: {link}"
+]
+
+banking_subjects = [
+    "Your monthly statement is ready",
+    "Account balance update",
+    "Transaction alert: {amount}",
+    "Your statement for {date} is available",
+    "Your account activity summary",
+    "A new transaction was recorded",
+    "Your direct debit has been processed",
+    "Your savings account update",
+    "Important account notification",
+    "Your weekly balance summary",
+    "Your account has been credited",
+    "Standing order processed: {amount}",
+    "Your new statement is available online",
+    "Recent transaction on your account",
+    "Your overdraft limit notification",
+    "Card payment confirmed: {amount}",
+    "Your ISA statement is ready",
+    "Scheduled payment processed",
+    "Your account summary for {date}",
+    "New transaction posted to your account"
+]
+
+banking_bodies = [
+    "Hi {name}, your monthly account statement is now available. View it here: {link}",
+    "Hello {name}, a transaction of {amount} was recorded on your account. Details: {link}",
+    "Hi {name}, your account balance was updated on {date}. Log in to view: {link}",
+    "Hello {name}, your account activity summary for this period is ready. View it here: {link}",
+    "Hi {name}, a direct debit of {amount} was processed from your account on {date}. Details: {link}",
+    "Hello {name}, your savings account balance was updated. View your new balance here: {link}",
+    "Hi {name}, here is an important notification regarding your account. View details: {link}",
+    "Hello {name}, your weekly balance summary is ready to view. Log in here: {link}",
+    "Hi {name}, a new transaction of {amount} has been recorded on your statement. View it here: {link}",
+    "Hello {name}, your account statement for {date} is now ready to download: {link}",
+    "Hi {name}, your account has been credited with {amount}. View your updated balance: {link}",
+    "Hello {name}, a standing order of {amount} has been processed from your account: {link}",
+    "Hi {name}, a card payment of {amount} has been confirmed on your account. Details: {link}",
+    "Hello {name}, your ISA statement is now available to view online. Access it here: {link}",
+    "Hi {name}, a scheduled payment of {amount} has been processed from your account: {link}",
+    "Hello {name}, a new transaction has been posted to your account. Review it here: {link}",
+    "Hi {name}, your account summary for {date} is now available. View it here: {link}",
+    "Hello {name}, we wanted to let you know about a recent transaction on your account: {link}",
+    "Hi {name}, your monthly statement is ready and available in your online banking portal: {link}",
+    "Hello {name}, your direct debit schedule has been updated. View the changes here: {link}"
+    "Hi {name}, please confirm your account details to complete your recent transaction of {amount}: {link}",
+    "Hello {name}, action required: please review and confirm your recent account activity: {link}",
+    "Hi {name}, please verify your contact details to ensure you continue receiving account notifications: {link}",
+    "Hello {name}, please update your direct debit details to avoid any disruption to your payments: {link}",
+    "Hi {name}, we need you to confirm your identity to complete a recent account update: {link}"   
+]
+
+it_subjects = [
+    "Scheduled maintenance on {date}",
+    "Password expiry reminder",
+    "New software update available",
+    "Action required: update your device",
+    "Your IT support ticket update",
+    "VPN access renewal required",
+    "New security policy update",
+    "Your device compliance check",
+    "Software licence renewal reminder",
+    "System downtime notice for {date}",
+    "Your remote access certificate expires soon",
+    "New company-wide software rollout",
+    "IT helpdesk: your ticket has been resolved",
+    "Mandatory system update required",
+    "Your multi-factor authentication setup",
+    "Network maintenance planned for {date}",
+    "Your email storage limit notification",
+    "IT security awareness reminder",
+    "Your workplace account has been updated",
+    "Reminder: complete your IT compliance training"
+]
+
+it_bodies = [
+    "Hi {name}, scheduled system maintenance will occur on {date}. More details: {link}",
+    "Hello {name}, your password will expire soon. Update it here: {link}",
+    "Hi {name}, a new software update is available for your device. Install it here: {link}",
+    "Hello {name}, your IT support ticket has been updated. View the latest status here: {link}",
+    "Hi {name}, your VPN access is due for renewal. Renew it here to avoid interruption: {link}",
+    "Hello {name}, a new security policy has been introduced. Review the changes here: {link}",
+    "Hi {name}, your device is due for a routine compliance check. Schedule it here: {link}",
+    "Hello {name}, your software licence is due for renewal soon. Renew it here: {link}",
+    "Hi {name}, please note there will be system downtime on {date} for scheduled updates: {link}",
+    "Hello {name}, your account requires a routine IT review. Complete it here: {link}",
+    "Hi {name}, your remote access certificate is expiring soon. Renew it here: {link}",
+    "Hello {name}, a new software rollout is being deployed company-wide. Details here: {link}",
+    "Hi {name}, your IT helpdesk ticket has been resolved. View the resolution here: {link}",
+    "Hello {name}, a mandatory system update has been scheduled for your device. Install: {link}",
+    "Hi {name}, please complete your multi-factor authentication setup by {date}: {link}",
+    "Hello {name}, network maintenance is planned for {date}. See which services are affected: {link}",
+    "Hi {name}, your email storage is approaching its limit. Manage your storage here: {link}",
+    "Hello {name}, this is a reminder to complete your annual IT security awareness training: {link}",
+    "Hi {name}, your workplace account settings have been updated. Review the changes here: {link}",
+    "Hello {name}, please complete your IT compliance training by {date}. Access it here: {link}"
+    "Hi {name}, please confirm your device compliance status to continue accessing company systems: {link}",
+    "Hello {name}, action required: please review and confirm the recent changes to your account: {link}",
+    "Hi {name}, please verify your identity to complete the IT security check on your account: {link}",
+    "Hello {name}, please update your VPN credentials to continue accessing company resources: {link}",
+    "Hi {name}, we need you to confirm your software licence details before renewal: {link}"
+]
+
+#phishing emails
+credential_subjects = [
+    "Action required: verify your Amazon account",
+    "Your PayPal account needs confirmation",
+    "LinkedIn: please verify your login details",
+    "Unusual sign-in detected on your account",
+    "Your Coursera account requires verification",
+    "Please confirm your banking credentials",
+    "Your account access will be restricted",
+    "We need to verify your identity",
+    "Login verification needed for your account",
+    "Important: confirm your account details",
+    "Your account security check is required",
+    "Verify your details to continue",
+    "Action needed: confirm your login",
+    "Your account requires immediate attention",
+    "Please re-authenticate your account",
+    "Security check: confirm your details",
+    "Your session requires confirmation",
+    "We detected an issue with your account",
+    "Account verification request",
+    "Re-verify your login to continue"
+]
+
+credential_bodies = [
+    "Hi {name}, we noticed unusual activity on your Amazon account. Your order {order_id} could not be verified. Please confirm your account details to continue: {link}",
+    "Hello {name}, your PayPal account requires verification following a recent payment of {amount}. Please confirm your details here to avoid any disruption: {link}",
+    "Hi {name}, we noticed a sign-in to your LinkedIn account from an unrecognised device. Please verify your credentials to secure your account: {link}",
+    "Hello {name}, your Coursera account requires re-authentication to continue accessing {course}. Please confirm your login details here: {link}",
+    "Hi {name}, your banking account requires verification following recent account activity. Please confirm your details to maintain access: {link}",
+    "Hello {name}, we were unable to verify your recent Amazon order {order_id}. Please confirm your account details to complete your purchase: {link}",
+    "Hi {name}, your PayPal account has been flagged for a routine security check. Please verify your identity here to continue: {link}",
+    "Hello {name}, your LinkedIn account credentials need to be updated. Please confirm your login details to avoid restricted access: {link}",
+    "Hi {name}, your account requires verification before your next billing cycle of {amount}. Please confirm your details here: {link}",
+    "Hello {name}, we need to confirm it was you who recently signed in. Please verify your account details here to continue: {link}",
+    "Hi {name}, as part of our security process, we need you to confirm your login credentials. Please verify here: {link}",
+    "Hello {name}, your account details need to be reconfirmed for continued access. Please complete this short verification: {link}",
+    "Hi {name}, immediate verification is required to maintain uninterrupted access to your account. Please confirm here: {link}",
+    "Hello {name}, we require you to re-verify your credentials at this time. Please complete the process here: {link}",
+    "Hi {name}, a security check has been triggered on your account. Please confirm your details to continue: {link}",
+    "Hello {name}, please confirm your account details to ensure continued secure access to your services: {link}",
+    "Hi {name}, your current session requires confirmation to proceed. Please verify your details here: {link}",
+    "Hello {name}, we are reaching out to confirm your account is secure. Please complete the verification here: {link}",
+    "Hi {name}, your account verification is overdue. Please complete it here to continue using your services: {link}",
+    "Hello {name}, please confirm your account details to avoid any disruption to your service: {link}"
+]
+
+suspension_subjects = [
+    "Your Amazon account has been temporarily suspended",
+    "Your PayPal account is under review",
+    "LinkedIn: your account may be restricted soon",
+    "Action needed to keep your account active",
+    "Your account status has changed",
+    "Immediate action required on your account",
+    "Your account may be limited soon",
+    "We need to verify your account status",
+    "Your account is pending review",
+    "Final reminder: confirm your account details",
+    "Your account has been flagged for review",
+    "Account restriction notice",
+    "Urgent: your account requires attention",
+    "Your access may be limited",
+    "Account review in progress",
+    "We have placed a hold on your account",
+    "Action required to restore full access",
+    "Your account privileges are under review",
+    "Notice: account activity flagged",
+    "Your account status update"
+]
+
+suspension_bodies = [
+    "Hi {name}, your Amazon account has been temporarily suspended due to unusual activity on order {order_id}. Please confirm your details within 48 hours to restore access: {link}",
+    "Hello {name}, your PayPal account is currently under review following a transaction of {amount}. Please confirm your information here to avoid restrictions: {link}",
+    "Hi {name}, your LinkedIn account has been flagged for review. Please confirm your details to avoid suspension of your account: {link}",
+    "Hello {name}, your account may be limited soon unless you verify your details. Please complete this confirmation to keep your account active: {link}",
+    "Hi {name}, your account status has recently changed following a review of recent activity. Please confirm your details here: {link}",
+    "Hello {name}, immediate action is needed to prevent limited access to your account. Please confirm your details here: {link}",
+    "Hi {name}, we need to verify your current account status. Please confirm your details here to continue: {link}",
+    "Hello {name}, your account is currently pending review. Please confirm your information to continue using our services: {link}",
+    "Hi {name}, this is a final reminder to confirm your account details before access is limited: {link}",
+    "Hello {name}, please complete this brief confirmation to keep your account in good standing: {link}",
+    "Hi {name}, we have placed a temporary hold on your account pending verification. Please confirm your details here: {link}",
+    "Hello {name}, your account privileges are currently under review. Please provide confirmation to continue: {link}",
+    "Hi {name}, we have flagged recent activity on your account and require your confirmation to proceed: {link}",
+    "Hello {name}, to restore full access to your account, please complete this verification process: {link}",
+    "Hi {name}, your account requires attention to avoid an upcoming restriction. Please act here: {link}",
+    "Hello {name}, we are conducting a routine account review and need your confirmation to proceed: {link}",
+    "Hi {name}, your account has been placed under review following recent activity. Please confirm here: {link}",
+    "Hello {name}, please verify your account details to prevent any disruption to your service: {link}",
+    "Hi {name}, an account status update requires your attention. Please review and confirm here: {link}",
+    "Hello {name}, action is required to maintain your current level of account access: {link}"
+]
+
+payment_subjects = [
+    "Your Amazon payment of {amount} could not be processed",
+    "PayPal: update your billing information",
+    "Your subscription payment of {amount} failed",
+    "We could not process your recent payment",
+    "Action needed: billing issue on your account",
+    "Your payment method needs attention",
+    "Please review your payment details",
+    "Your account billing requires confirmation",
+    "We need to verify your payment method",
+    "Your recent charge of {amount} could not be completed",
+    "Billing update required on your account",
+    "Your payment is on hold",
+    "Resolve a payment issue on your account",
+    "Outstanding balance of {amount} on your account",
+    "Payment declined: action required",
+    "Your billing cycle update",
+    "Confirm your payment method to continue",
+    "We were unable to charge your account",
+    "Your subscription renewal needs attention",
+    "Your invoice of {amount} is ready for review"
+]
+
+payment_bodies = [
+    "Hi {name}, we were unable to process your recent Amazon payment of {amount} for order {order_id}. Please update your billing details here to complete your purchase: {link}",
+    "Hello {name}, your PayPal payment method requires verification before your next billing cycle. Please confirm your details here to avoid any disruption: {link}",
+    "Hi {name}, your subscription payment of {amount} did not go through. Please update your billing details here to continue your service: {link}",
+    "Hello {name}, we detected a billing issue on your account related to a recent charge of {amount}. Please review and update your details here: {link}",
+    "Hi {name}, there was an issue processing your payment of {amount}. Please update your information here to avoid service interruption: {link}",
+    "Hello {name}, please review your payment details to avoid any disruption to your service: {link}",
+    "Hi {name}, your account billing needs to be confirmed to continue without interruption. Please update here: {link}",
+    "Hello {name}, we need to verify your current payment method on file. Please confirm it here: {link}",
+    "Hi {name}, your recent charge of {amount} could not be completed. Please update your details here: {link}",
+    "Hello {name}, to avoid any disruption to your account, please confirm your billing information here: {link}",
+    "Hi {name}, your payment of {amount} is currently on hold pending verification. Please resolve it here: {link}",
+    "Hello {name}, there is an outstanding balance of {amount} on your account. Please settle it here: {link}",
+    "Hi {name}, your payment was declined. Please update your billing details to continue your service: {link}",
+    "Hello {name}, we were unable to charge your account for the recent billing cycle. Please update here: {link}",
+    "Hi {name}, your subscription renewal of {amount} requires your attention. Please confirm here: {link}",
+    "Hello {name}, a billing update is required on your account to avoid service interruption: {link}",
+    "Hi {name}, your invoice for {amount} is ready. Please review and confirm payment here: {link}",
+    "Hello {name}, please confirm your payment method to ensure uninterrupted service: {link}",
+    "Hi {name}, we could not process the {amount} charge on your account. Please review here: {link}",
+    "Hello {name}, action is required to resolve a payment issue on your account: {link}"
+]
+
+delivery_subjects = [
+    "Your Amazon delivery could not be completed",
+    "Action required: confirm your delivery address",
+    "Your package from order {order_id} is on hold",
+    "We could not deliver your parcel today",
+    "Your shipment requires address confirmation",
+    "Delivery attempt failed for order {order_id}",
+    "Your package is awaiting confirmation",
+    "Delivery rescheduling required",
+    "Outstanding customs fee on your shipment",
+    "Your parcel could not be delivered as scheduled",
+    "Delivery exception on your recent order",
+    "Your package is being held at the depot",
+    "Missed delivery: reschedule now",
+    "Customs clearance required for your parcel",
+    "Your delivery window has been updated",
+    "We need your address confirmation to proceed",
+    "Your parcel is ready for collection",
+    "Delivery failed: address unconfirmed",
+    "Action required to release your shipment",
+    "Your package delivery update for order {order_id}"
+]
+
+delivery_bodies = [
+    "Hi {name}, we attempted to deliver your Amazon order {order_id} but were unable to confirm your address. Please update your delivery details here: {link}",
+    "Hello {name}, your package from order {order_id} is currently on hold pending address confirmation. Please confirm your details here to release your delivery: {link}",
+    "Hi {name}, your parcel is being held at the local depot pending a small customs fee of {amount}. Please complete payment here to release your delivery: {link}",
+    "Hello {name}, delivery of your order {order_id} could not be completed. Please confirm your address here to reschedule: {link}",
+    "Hi {name}, your shipment is currently on hold pending address verification. Please confirm your details here: {link}",
+    "Hello {name}, your package is awaiting confirmation before it can be delivered. Please confirm here: {link}",
+    "Hi {name}, we need to reschedule your delivery for order {order_id}. Please confirm a suitable time here: {link}",
+    "Hello {name}, there is an outstanding customs fee on your shipment that needs to be settled: {link}",
+    "Hi {name}, your parcel could not be delivered as scheduled. Please review your details here to rearrange: {link}",
+    "Hello {name}, please complete this short confirmation to release your pending delivery: {link}",
+    "Hi {name}, a delivery exception has occurred on your order {order_id}. Please review the details here: {link}",
+    "Hello {name}, your parcel is currently being held at the local depot. Please arrange collection here: {link}",
+    "Hi {name}, you missed a delivery attempt for order {order_id}. Please reschedule your delivery here: {link}",
+    "Hello {name}, customs clearance is required for your parcel before it can be delivered. Complete the process here: {link}",
+    "Hi {name}, your delivery window has been updated for order {order_id}. Please confirm the new time slot here: {link}",
+    "Hello {name}, we need your address confirmation before we can release your shipment: {link}",
+    "Hi {name}, your parcel is ready for collection at a nearby pickup point. Please view details here: {link}",
+    "Hello {name}, your delivery could not be completed as your address could not be confirmed: {link}",
+    "Hi {name}, action is required to release your shipment from the delivery hold. Please complete here: {link}",
+    "Hello {name}, here is an update on your delivery for order {order_id}. Please confirm your details here: {link}"
+]
+
+security_subjects = [
+    "Security alert: new sign-in to your Amazon account",
+    "Your PayPal account was accessed from a new device",
+    "LinkedIn: we detected a login from an unrecognised location",
+    "Your password may have been compromised",
+    "Important: review recent activity on your account",
+    "Unusual activity detected on your account",
+    "Your account security needs attention",
+    "We noticed a new login location on your account",
+    "Please review this recent sign-in",
+    "Your account safety check is required",
+    "Security notice: action recommended",
+    "New sign-in detected on your account",
+    "Your account was accessed from a new location",
+    "We have flagged suspicious activity on your account",
+    "Password reset recommended for your account",
+    "Potential unauthorised access detected",
+    "Your security settings have changed",
+    "Review your recent account access",
+    "We recommend securing your account now",
+    "Your account protection update"
+]
+
+security_bodies = [
+    "Hi {name}, we detected a new sign-in to your Amazon account from an unrecognised device. If this was not you, please secure your account immediately: {link}",
+    "Hello {name}, your PayPal account was accessed from a new location following a recent transaction of {amount}. Please confirm this was you here: {link}",
+    "Hi {name}, we noticed a sign-in to your LinkedIn account from an unrecognised location. Please review this activity and secure your account if needed: {link}",
+    "Hello {name}, your account password may have been compromised in a recent data exposure. Please reset it now to stay protected: {link}",
+    "Hi {name}, please review recent activity on your account and confirm it was you who signed in: {link}",
+    "Hello {name}, we have noticed unusual activity on your account recently. Please review it here and take action if needed: {link}",
+    "Hi {name}, your account security may need attention following a recent alert. Please review here: {link}",
+    "Hello {name}, we noticed a login from a location you have not used before. Please confirm this was you here: {link}",
+    "Hi {name}, please take a moment to review this recent sign-in to your account and confirm it was authorised: {link}",
+    "Hello {name}, we recommend completing a quick account safety check at this time: {link}",
+    "Hi {name}, for your protection, please confirm the recent activity on your account here: {link}",
+    "Hello {name}, we have issued a security notice for your account. Please take action here: {link}",
+    "Hi {name}, a new sign-in to your account was detected from an unfamiliar device. Please review here: {link}",
+    "Hello {name}, your account was accessed from a new location. Please confirm this was you here: {link}",
+    "Hi {name}, we have flagged suspicious activity on your account. Please review and secure it here: {link}",
+    "Hello {name}, we recommend resetting your password as a precaution following a recent security alert: {link}",
+    "Hi {name}, please review your recent account access to confirm all activity was authorised: {link}",
+    "Hello {name}, we recommend taking steps to secure your account following a recent alert: {link}",
+    "Hi {name}, an unrecognised login attempt was made on your account. Please review it here: {link}",
+    "Hello {name}, here is an update on your account protection status. Please review and take action if needed: {link}"
+]
+
+def generate_email(email_id, label, category, subjects, bodies):
+    name = random.choice(names)
+    order_id = f"#{random.randint(100000, 999999)}"
+    amount = f"${random.randint(15, 250)}.{random.randint(0,99):02d}"
+    date = random.choice(["Tuesday", "Thursday", "this Friday", "next Monday"])
+    course = random.choice(courses)
+
+    subject = random.choice(subjects).format( name=name, order_id=order_id, course=course, amount=amount, date=date, link="" )
+    body = random.choice(bodies).format(
+    name=name, order_id=order_id, amount=amount, date=date, link="", course=course
+)
+
+    return {
+        "id": email_id,
+        "label": label,
+        "category": category,
+        "subject": subject,
+        "body": body
+    }
+    
+#legitimate loops
+all_emails = []
+email_id = 0
+
+for i in range(417):
+    all_emails.append(generate_email(
+    email_id, "legitimate", "amazon_order", amazon_subjects, amazon_bodies
+    ))
+    email_id += 1
+
+for i in range(417):
+    all_emails.append(generate_email(
+        email_id, "legitimate", "linkedin_notification", linkedin_subjects, linkedin_bodies
+    ))
+    email_id += 1
+for i in range(417):
+    all_emails.append(generate_email(
+        email_id, "legitimate", "coursera_notification", coursera_subjects, coursera_bodies
+    ))
+    email_id += 1
+
+for i in range(417):
+    all_emails.append(generate_email(
+        email_id, "legitimate", "paypal_payment", paypal_subjects, paypal_bodies
+    ))
+    email_id += 1
+
+for i in range(417):
+    all_emails.append(generate_email(
+        email_id, "legitimate", "banking_notification", banking_subjects, banking_bodies
+    ))
+    email_id += 1
+
+for i in range(417):
+    all_emails.append(generate_email(
+        email_id, "legitimate", "corporate_it", it_subjects, it_bodies
+    ))
+    email_id += 1
+    
+#phishing loops
+for i in range(500):
+    all_emails.append(generate_email(
+        email_id, "phishing", "credential_harvesting",
+        credential_subjects, credential_bodies
+    ))
+    email_id += 1
+
+for i in range(500):
+    all_emails.append(generate_email(
+        email_id, "phishing", "account_suspension",
+        suspension_subjects, suspension_bodies
+    ))
+    email_id += 1
+
+for i in range(500):
+    all_emails.append(generate_email(
+        email_id, "phishing", "payment_verification",
+        payment_subjects, payment_bodies
+    ))
+    email_id += 1
+
+for i in range(500):
+    all_emails.append(generate_email(
+        email_id, "phishing", "delivery_notification",
+        delivery_subjects, delivery_bodies
+    ))
+    email_id += 1
+
+for i in range(500):
+    all_emails.append(generate_email(
+        email_id, "phishing", "security_alert",
+        security_subjects, security_bodies
+    ))
+    email_id += 1
+
+with open("emails.csv", "w", newline="") as file:
+    writer = csv.DictWriter(file, fieldnames=["id", "label", "category", "subject", "body"])
+    writer.writeheader()
+    writer.writerows(all_emails)
+
+print(f"Generated {len(all_emails)} emails and saved to emails.csv")
+
+
+
+
+
+
+
+FILE merge_datasets.py
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+#  Load your synthetic dataset 
+print("Loading synthetic dataset...")
+synthetic = pd.read_csv("emails.csv")
+print(f"Synthetic emails: {len(synthetic)}")
+
+#  Load the real Kaggle dataset 
+print("\nLoading real email dataset...")
+real = pd.read_csv("Phishing_Email.csv")
+print(f"Real emails before cleaning: {len(real)}")
+
+#  Clean empty and useless rows 
+real = real[real['Email Text'].notna()]
+real = real[real['Email Text'].str.strip() != '']
+real = real[real['Email Text'].str.strip().str.lower() != 'empty']
+real = real[real['Email Text'].str.strip().str.lower() != 'nan']
+real = real[real['Email Text'].str.len() > 50]
+print(f"Real emails after cleaning: {len(real)}")
+
+#  Sample 2500 legitimate and 2500 phishing from real data 
+real_legit = real[real['Email Type'] == 'Safe Email'].sample(
+    n=2500, random_state=42
+)
+real_phish = real[real['Email Type'] == 'Phishing Email'].sample(
+    n=2500, random_state=42
+)
+
+#  Standardise real data columns to match your synthetic format 
+real_legit_clean = pd.DataFrame({
+    'id': range(len(real_legit)),
+    'label': 'legitimate',
+    'category': 'real_enron',
+    'subject': '',
+    'body': real_legit['Email Text'].values
+})
+
+real_phish_clean = pd.DataFrame({
+    'id': range(len(real_phish)),
+    'label': 'phishing',
+    'category': 'real_historical_phishing',
+    'subject': '',
+    'body': real_phish['Email Text'].values
+})
+
+#  Combine everything
+combined = pd.concat([
+    synthetic,
+    real_legit_clean,
+    real_phish_clean
+], ignore_index=True)
+
+# Reset IDs 
+combined['id'] = range(len(combined))
+
+#  Check balance 
+print(f"\nCombined dataset: {len(combined)} emails")
+print(f"Label distribution:\n{combined['label'].value_counts()}")
+
+#  Save combined dataset 
+combined.to_csv("emails_combined.csv", index=False)
+print("\nSaved to emails_combined.csv")
+
+
+
+
+
+
+
+
+FILE split_dataset.py
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+# Load the full dataset in the dataframe
+df = pd.read_csv("emails_combined.csv")
+
+print(f"Total emails: {len(df)}")
+print(f"Label distribution:\n{df['label'].value_counts()}")
+
+# Step 1: Split off 15% as held out test set
+train_val, test = train_test_split(
+    df,
+    test_size=0.15,
+    random_state=42,
+    stratify=df['label']
+)
+
+# Step 2: Split remaining 85% into train (70%) and validation (15%)
+train, val = train_test_split(
+    train_val,
+    test_size=0.176,
+    random_state=42,
+    stratify=train_val['label']
+)
+
+# Save all three splits
+train.to_csv("train_combined.csv", index=False)
+val.to_csv("val_combined.csv", index=False)
+test.to_csv("test_combined.csv", index=False)
+
+print(f"\nSplit complete:")
+print(f"Training set:   {len(train)} emails ({len(train)/len(df)*100:.1f}%)")
+print(f"Validation set: {len(val)} emails ({len(val)/len(df)*100:.1f}%)")
+print(f"Test set:       {len(test)} emails ({len(test)/len(df)*100:.1f}%)")
+print(f"\nLabel balance in training set:\n{train['label'].value_counts()}")
+print(f"\nLabel balance in validation set:\n{val['label'].value_counts()}")
+print(f"\nLabel balance in test set:\n{test['label'].value_counts()}")
+
+
+
+FILE train_random_forest.py
+import pandas as pd
+import pickle
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+
+#  Load splits 
+train = pd.read_csv("train_combined.csv")
+val = pd.read_csv("val_combined.csv")
+
+print(f"Training on {len(train)} emails...")
+print(f"Validating on {len(val)} emails...")
+
+#  Combine subject and body into one text field 
+train["text"] = train["subject"].fillna("") + " " + train["body"].fillna("")
+val["text"] = val["subject"].fillna("") + " " + val["body"].fillna("")
+
+#  Labels
+train_labels = train["label"]
+val_labels = val["label"]
+
+# TF-IDF Vectoriser
+print("\nBuilding TF-IDF features...")
+vectoriser = TfidfVectorizer(
+    ngram_range=(1, 2),   # unigrams and bigrams
+    max_features=5000,    # top 5000 features
+    stop_words="english"
+)
+
+train_features = vectoriser.fit_transform(train["text"])
+val_features = vectoriser.transform(val["text"])
+
+#  Random Forest 
+print("Training Random Forest...")
+rf = RandomForestClassifier(
+    n_estimators=150,
+    max_depth=25,
+    random_state=42,
+    n_jobs=-1
+)
+
+rf.fit(train_features, train_labels)
+
+#  Validation metrics 
+val_predictions = rf.predict(val_features)
+
+accuracy  = accuracy_score(val_labels, val_predictions)
+precision = precision_score(val_labels, val_predictions, pos_label="phishing")
+recall    = recall_score(val_labels, val_predictions, pos_label="phishing")
+f1        = f1_score(val_labels, val_predictions, pos_label="phishing")
+cm        = confusion_matrix(val_labels, val_predictions, labels=["legitimate", "phishing"])
+
+print(f"\n── Validation Results ")
+print(f"Accuracy:  {accuracy:.4f}")
+print(f"Precision: {precision:.4f}")
+print(f"Recall:    {recall:.4f}")
+print(f"F1 Score:  {f1:.4f}")
+print(f"\nConfusion Matrix:")
+print(f"                 Predicted Legitimate  Predicted Phishing")
+print(f"Actual Legitimate       {cm[0][0]}                  {cm[0][1]}")
+print(f"Actual Phishing         {cm[1][0]}                  {cm[1][1]}")
+
+#  Save the pipeline 
+print("\nSaving model...")
+with open("rf_pipeline_combined.pkl", "wb") as f:
+    pickle.dump({"vectoriser": vectoriser, "model": rf}, f)
+
+print("Saved to rf_pipeline_combined.pkl")
+print("\nDone.")
+
+
+
+FILE train_distilbert.py
+import pandas as pd
+import torch
+from torch.utils.data import Dataset, DataLoader
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+from torch.optim import AdamW
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import time
+
+#  Device setup 
+if torch.backends.mps.is_available():
+    device = torch.device("mps")
+    print("Using Apple Silicon MPS")
+elif torch.cuda.is_available():
+    device = torch.device("cuda")
+    print("Using NVIDIA CUDA")
+else:
+    device = torch.device("cpu")
+    print("Using CPU")
+
+#  Load data 
+print("\nLoading data...")
+train = pd.read_csv("train_combined.csv")
+val = pd.read_csv("val_combined.csv")
+
+train["text"] = train["subject"].fillna("") + " " + train["body"].fillna("")
+val["text"] = val["subject"].fillna("") + " " + val["body"].fillna("")
+
+#  Label encoding 
+label2id = {"legitimate": 0, "phishing": 1}
+train["label_id"] = train["label"].map(label2id)
+val["label_id"] = val["label"].map(label2id)
+
+print(f"Training samples: {len(train)}")
+print(f"Validation samples: {len(val)}")
+
+#  Tokeniser 
+print("\nLoading DistilBERT tokeniser...")
+tokeniser = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
+
+#  Dataset class 
+class EmailDataset(Dataset):
+    def __init__(self, texts, labels, tokeniser, max_length=128):
+        self.texts = texts
+        self.labels = labels
+        self.tokeniser = tokeniser
+        self.max_length = max_length
+
+    def __len__(self):
+        return len(self.texts)
+
+    def __getitem__(self, idx):
+        encoding = self.tokeniser(
+            str(self.texts[idx]),
+            truncation=True,
+            padding="max_length",
+            max_length=self.max_length,
+            return_tensors="pt"
+        )
+        return {
+            "input_ids": encoding["input_ids"].squeeze(),
+            "attention_mask": encoding["attention_mask"].squeeze(),
+            "label": torch.tensor(self.labels[idx], dtype=torch.long)
+        }
+
+#  Create datasets 
+train_dataset = EmailDataset(
+    train["text"].tolist(),
+    train["label_id"].tolist(),
+    tokeniser
+)
+val_dataset = EmailDataset(
+    val["text"].tolist(),
+    val["label_id"].tolist(),
+    tokeniser
+)
+
+#  Data loaders 
+train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=8, shuffle=False)
+
+#  Load model 
+print("\nLoading DistilBERT model...")
+model = DistilBertForSequenceClassification.from_pretrained(
+    "distilbert-base-uncased",
+    num_labels=2
+)
+model = model.to(device)
+
+#  Optimiser 
+optimiser = AdamW(model.parameters(), lr=2e-5, weight_decay=0.01)
+
+#  Training loop 
+print("\nStarting training...")
+EPOCHS = 3
+
+for epoch in range(EPOCHS):
+    model.train()
+    total_loss = 0
+    start_time = time.time()
+
+    for batch_idx, batch in enumerate(train_loader):
+        input_ids = batch["input_ids"].to(device)
+        attention_mask = batch["attention_mask"].to(device)
+        labels = batch["label"].to(device)
+
+        optimiser.zero_grad()
+        outputs = model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            labels=labels
+        )
+        loss = outputs.loss
+        loss.backward()
+        optimiser.step()
+        total_loss += loss.item()
+
+        if (batch_idx + 1) % 100 == 0:
+            print(f"  Epoch {epoch+1} | Batch {batch_idx+1}/{len(train_loader)} | Loss: {loss.item():.4f}")
+
+    avg_loss = total_loss / len(train_loader)
+    elapsed = time.time() - start_time
+    print(f"\nEpoch {epoch+1} complete | Avg Loss: {avg_loss:.4f} | Time: {elapsed:.1f}s")
+
+    #  Validation 
+    model.eval()
+    all_preds = []
+    all_labels = []
+
+    with torch.no_grad():
+        for batch in val_loader:
+            input_ids = batch["input_ids"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
+            labels = batch["label"].to(device)
+
+            outputs = model(
+                input_ids=input_ids,
+                attention_mask=attention_mask
+            )
+            preds = torch.argmax(outputs.logits, dim=1)
+            all_preds.extend(preds.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+
+    accuracy  = accuracy_score(all_labels, all_preds)
+    precision = precision_score(all_labels, all_preds)
+    recall    = recall_score(all_labels, all_preds)
+    f1        = f1_score(all_labels, all_preds)
+
+    print(f"Validation | Accuracy: {accuracy:.4f} | Precision: {precision:.4f} | Recall: {recall:.4f} | F1: {f1:.4f}")
+
+#  Save model 
+print("\nSaving model...")
+model.save_pretrained("distilbert_phishing")
+tokeniser.save_pretrained("distilbert_phishing")
+print("Model saved to distilbert_phishing/")
+print("\nDone.")
+
+
+
+
+FILE evaluate_and_plot.py
+import pandas as pd
+import numpy as np
+import pickle
+import torch
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+from torch.utils.data import Dataset, DataLoader
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score, f1_score,
+    confusion_matrix, roc_curve, auc, precision_recall_curve
+)
+import time
+
+# Create output folder for plots
+os.makedirs("plots", exist_ok=True)
+
+# Device setup
+if torch.backends.mps.is_available():
+    device = torch.device("mps")
+    print("Using Apple Silicon MPS")
+else:
+    device = torch.device("cpu")
+    print("Using CPU")
+
+# Load test set
+print("\nLoading test set...")
+test = pd.read_csv("test_combined.csv")
+test["text"] = test["subject"].fillna("") + " " + test["body"].fillna("")
+print(f"Test emails: {len(test)}")
+print(f"Label distribution:\n{test['label'].value_counts()}")
+
+
+# RANDOM FOREST EVALUATION
+
+print("\nRANDOM FOREST EVALUATION")
+
+# Load RF model
+with open("rf_pipeline_combined.pkl", "rb") as f:
+    rf_pipeline = pickle.load(f)
+
+vectoriser = rf_pipeline["vectoriser"]
+rf_model = rf_pipeline["model"]
+
+# Transform test features
+test_features = vectoriser.transform(test["text"])
+test_labels = test["label"]
+
+# RF Latency measurement
+print("\nMeasuring RF inference latency...")
+latency_runs = []
+sample_feature = test_features[0]
+for _ in range(10):
+    start = time.perf_counter()
+    rf_model.predict(sample_feature)
+    end = time.perf_counter()
+    latency_runs.append((end - start) * 1000)
+rf_latency = np.mean(latency_runs)
+print(f"RF average latency: {rf_latency:.4f} ms per email")
+
+# RF Predictions
+rf_preds = rf_model.predict(test_features)
+rf_proba = rf_model.predict_proba(test_features)[:, 1]
+
+# Convert labels to binary
+label2id = {"legitimate": 0, "phishing": 1}
+test_binary = test_labels.map(label2id)
+rf_preds_binary = pd.Series(rf_preds).map(label2id)
+
+# RF Metrics
+rf_accuracy  = accuracy_score(test_binary, rf_preds_binary)
+rf_precision = precision_score(test_binary, rf_preds_binary)
+rf_recall    = recall_score(test_binary, rf_preds_binary)
+rf_f1        = f1_score(test_binary, rf_preds_binary)
+rf_cm        = confusion_matrix(test_binary, rf_preds_binary)
+
+print(f"\nRandom Forest Test Results:")
+print(f"Accuracy:  {rf_accuracy:.4f}")
+print(f"Precision: {rf_precision:.4f}")
+print(f"Recall:    {rf_recall:.4f}")
+print(f"F1 Score:  {rf_f1:.4f}")
+print(f"Latency:   {rf_latency:.4f} ms per email")
+
+# RF ROC
+rf_fpr, rf_tpr, _ = roc_curve(test_binary, rf_proba)
+rf_auc = auc(rf_fpr, rf_tpr)
+print(f"AUC:       {rf_auc:.4f}")
+
+# RF Confusion Matrix Plot
+plt.figure(figsize=(6, 5))
+sns.heatmap(rf_cm, annot=True, fmt="d", cmap="Blues",
+            xticklabels=["Legitimate", "Phishing"],
+            yticklabels=["Legitimate", "Phishing"])
+plt.title("Random Forest - Confusion Matrix (Test Set)")
+plt.ylabel("Actual")
+plt.xlabel("Predicted")
+plt.tight_layout()
+plt.savefig("plots/rf_confusion_matrix.png", dpi=150)
+plt.close()
+print("Saved: plots/rf_confusion_matrix.png")
+
+# RF Feature Importance Plot
+feature_names = vectoriser.get_feature_names_out()
+importances = rf_model.feature_importances_
+top_indices = np.argsort(importances)[::-1][:20]
+top_features = [feature_names[i] for i in top_indices]
+top_importances = [importances[i] for i in top_indices]
+
+plt.figure(figsize=(10, 6))
+sns.barplot(x=top_importances, y=top_features, hue=top_features,
+            palette="Blues_r", legend=False)
+plt.title("Random Forest - Top 20 Feature Importances (Gini)")
+plt.xlabel("Importance Score")
+plt.ylabel("Feature")
+plt.tight_layout()
+plt.savefig("plots/rf_feature_importance.png", dpi=150)
+plt.close()
+print("Saved: plots/rf_feature_importance.png")
+
+
+# DISTILBERT EVALUATION
+print("\nDISTILBERT EVALUATION")
+
+# Load DistilBERT
+print("\nLoading DistilBERT model...")
+tokeniser = DistilBertTokenizer.from_pretrained("distilbert_phishing")
+db_model = DistilBertForSequenceClassification.from_pretrained("distilbert_phishing")
+db_model = db_model.to(device)
+db_model.eval()
+
+# Dataset class
+class EmailDataset(Dataset):
+    def __init__(self, texts, labels, tokeniser, max_length=128):
+        self.texts = texts
+        self.labels = labels
+        self.tokeniser = tokeniser
+        self.max_length = max_length
+
+    def __len__(self):
+        return len(self.texts)
+
+    def __getitem__(self, idx):
+        encoding = self.tokeniser(
+            str(self.texts[idx]),
+            truncation=True,
+            padding="max_length",
+            max_length=self.max_length,
+            return_tensors="pt"
+        )
+        return {
+            "input_ids": encoding["input_ids"].squeeze(),
+            "attention_mask": encoding["attention_mask"].squeeze(),
+            "label": torch.tensor(self.labels[idx], dtype=torch.long)
+        }
+
+test_dataset = EmailDataset(
+    test["text"].tolist(),
+    test_binary.tolist(),
+    tokeniser
+)
+test_loader = DataLoader(test_dataset, batch_size=8, shuffle=False)
+
+# DistilBERT Latency
+print("\nMeasuring DistilBERT inference latency...")
+sample_text = str(test["text"].iloc[0])
+sample_enc = tokeniser(
+    sample_text, truncation=True, padding="max_length",
+    max_length=128, return_tensors="pt"
+)
+sample_ids = sample_enc["input_ids"].to(device)
+sample_mask = sample_enc["attention_mask"].to(device)
+
+latency_runs = []
+with torch.no_grad():
+    for _ in range(10):
+        start = time.perf_counter()
+        db_model(input_ids=sample_ids, attention_mask=sample_mask)
+        end = time.perf_counter()
+        latency_runs.append((end - start) * 1000)
+db_latency = np.mean(latency_runs)
+print(f"DistilBERT average latency: {db_latency:.4f} ms per email")
+
+# DistilBERT Predictions
+print("\nRunning DistilBERT on test set...")
+db_preds = []
+db_proba = []
+db_labels = []
+
+with torch.no_grad():
+    for batch in test_loader:
+        input_ids = batch["input_ids"].to(device)
+        attention_mask = batch["attention_mask"].to(device)
+        labels = batch["label"]
+
+        outputs = db_model(input_ids=input_ids, attention_mask=attention_mask)
+        probs = torch.softmax(outputs.logits, dim=1)[:, 1]
+        preds = torch.argmax(outputs.logits, dim=1)
+
+        db_preds.extend(preds.cpu().numpy())
+        db_proba.extend(probs.cpu().numpy())
+        db_labels.extend(labels.numpy())
+
+# DistilBERT Metrics
+db_accuracy  = accuracy_score(db_labels, db_preds)
+db_precision = precision_score(db_labels, db_preds)
+db_recall    = recall_score(db_labels, db_preds)
+db_f1        = f1_score(db_labels, db_preds)
+db_cm        = confusion_matrix(db_labels, db_preds)
+
+print(f"\nDistilBERT Test Results:")
+print(f"Accuracy:  {db_accuracy:.4f}")
+print(f"Precision: {db_precision:.4f}")
+print(f"Recall:    {db_recall:.4f}")
+print(f"F1 Score:  {db_f1:.4f}")
+print(f"Latency:   {db_latency:.4f} ms per email")
+
+# DistilBERT ROC
+db_fpr, db_tpr, _ = roc_curve(db_labels, db_proba)
+db_auc = auc(db_fpr, db_tpr)
+print(f"AUC:       {db_auc:.4f}")
+
+# DistilBERT Confusion Matrix Plot
+plt.figure(figsize=(6, 5))
+sns.heatmap(db_cm, annot=True, fmt="d", cmap="Oranges",
+            xticklabels=["Legitimate", "Phishing"],
+            yticklabels=["Legitimate", "Phishing"])
+plt.title("DistilBERT - Confusion Matrix (Test Set)")
+plt.ylabel("Actual")
+plt.xlabel("Predicted")
+plt.tight_layout()
+plt.savefig("plots/db_confusion_matrix.png", dpi=150)
+plt.close()
+print("Saved: plots/db_confusion_matrix.png")
+
+
+# COMBINED COMPARISON PLOTS
+print("\nGENERATING COMPARISON PLOTS")
+
+# ROC Curve Comparison
+plt.figure(figsize=(8, 6))
+plt.plot(rf_fpr, rf_tpr, color="steelblue", lw=2,
+         label=f"Random Forest (AUC = {rf_auc:.4f})")
+plt.plot(db_fpr, db_tpr, color="darkorange", lw=2,
+         label=f"DistilBERT (AUC = {db_auc:.4f})")
+plt.plot([0, 1], [0, 1], color="grey", lw=1, linestyle="--", label="Random Chance")
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("ROC Curve Comparison - Random Forest vs DistilBERT")
+plt.legend(loc="lower right")
+plt.tight_layout()
+plt.savefig("plots/roc_curve_comparison.png", dpi=150)
+plt.close()
+print("Saved: plots/roc_curve_comparison.png")
+
+# Precision-Recall Curve Comparison
+rf_pr_precision, rf_pr_recall, _ = precision_recall_curve(test_binary, rf_proba)
+db_pr_precision, db_pr_recall, _ = precision_recall_curve(db_labels, db_proba)
+
+plt.figure(figsize=(8, 6))
+plt.plot(rf_pr_recall, rf_pr_precision, color="steelblue", lw=2,
+         label="Random Forest")
+plt.plot(db_pr_recall, db_pr_precision, color="darkorange", lw=2,
+         label="DistilBERT")
+plt.xlabel("Recall")
+plt.ylabel("Precision")
+plt.title("Precision-Recall Curve - Random Forest vs DistilBERT")
+plt.legend(loc="lower left")
+plt.tight_layout()
+plt.savefig("plots/precision_recall_comparison.png", dpi=150)
+plt.close()
+print("Saved: plots/precision_recall_comparison.png")
+
+# Metrics Comparison Bar Chart
+metrics = ["Accuracy", "Precision", "Recall", "F1 Score"]
+rf_scores = [rf_accuracy, rf_precision, rf_recall, rf_f1]
+db_scores = [db_accuracy, db_precision, db_recall, db_f1]
+
+x = np.arange(len(metrics))
+width = 0.35
+
+plt.figure(figsize=(10, 6))
+bars1 = plt.bar(x - width/2, rf_scores, width, label="Random Forest",
+                color="steelblue", alpha=0.85)
+bars2 = plt.bar(x + width/2, db_scores, width, label="DistilBERT",
+                color="darkorange", alpha=0.85)
+
+for bar in bars1:
+    plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.002,
+             f"{bar.get_height():.4f}", ha="center", va="bottom", fontsize=9)
+for bar in bars2:
+    plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.002,
+             f"{bar.get_height():.4f}", ha="center", va="bottom", fontsize=9)
+
+plt.xticks(x, metrics)
+plt.ylim(0.85, 1.02)
+plt.ylabel("Score")
+plt.title("Model Performance Comparison - Random Forest vs DistilBERT (Test Set)")
+plt.legend()
+plt.tight_layout()
+plt.savefig("plots/metrics_comparison.png", dpi=150)
+plt.close()
+print("Saved: plots/metrics_comparison.png")
+
+# Latency Comparison
+plt.figure(figsize=(6, 5))
+model_names = ["Random Forest", "DistilBERT"]
+latencies = [rf_latency, db_latency]
+colors = ["steelblue", "darkorange"]
+bars = plt.bar(model_names, latencies, color=colors, alpha=0.85, width=0.4)
+for bar, val in zip(bars, latencies):
+    plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01,
+             f"{val:.4f} ms", ha="center", va="bottom", fontsize=10)
+plt.ylabel("Average Latency (ms per email)")
+plt.title("Inference Latency Comparison (10-run average)")
+plt.tight_layout()
+plt.savefig("plots/latency_comparison.png", dpi=150)
+plt.close()
+print("Saved: plots/latency_comparison.png")
+
+
+# FINAL SUMMARY
+print("\nFINAL EVALUATION SUMMARY")
+print(f"\n{'Metric':<15} {'Random Forest':>15} {'DistilBERT':>15}")
+print(f"{'Accuracy':<15} {rf_accuracy:>15.4f} {db_accuracy:>15.4f}")
+print(f"{'Precision':<15} {rf_precision:>15.4f} {db_precision:>15.4f}")
+print(f"{'Recall':<15} {rf_recall:>15.4f} {db_recall:>15.4f}")
+print(f"{'F1 Score':<15} {rf_f1:>15.4f} {db_f1:>15.4f}")
+print(f"{'AUC':<15} {rf_auc:>15.4f} {db_auc:>15.4f}")
+print(f"{'Latency (ms)':<15} {rf_latency:>15.4f} {db_latency:>15.4f}")
+print("\nPlots saved to: plots/")
+print("\nEvaluation complete.")
+
+
+
+
+FILE analyse_errors.py
+import pandas as pd
+import pickle
+import numpy as np
+
+#  Load validation set 
+val = pd.read_csv("val_combined.csv")
+val["text"] = val["subject"].fillna("") + " " + val["body"].fillna("")
+
+#  Load trained model 
+with open("rf_pipeline_combined.pkl", "rb") as f:
+    pipeline = pickle.load(f)
+
+vectoriser = pipeline["vectoriser"]
+model = pipeline["model"]
+
+#  Make predictions 
+val_features = vectoriser.transform(val["text"])
+val["predicted"] = model.predict(val_features)
+val["correct"] = val["label"] == val["predicted"]
+
+#  Pull out misclassified emails 
+errors = val[val["correct"] == False].copy()
+
+print(f"Total misclassified: {len(errors)}")
+print(f"\nBreakdown:")
+print(errors.groupby(["label", "predicted"]).size())
+
+#  False Positives: legitimate flagged as phishing 
+fp = errors[(errors["label"] == "legitimate") & (errors["predicted"] == "phishing")]
+print(f"\nFALSE POSITIVES ({len(fp)})")
+print("Legitimate emails wrongly flagged as phishing:\n")
+for i, row in fp.iterrows():
+    print(f"Category: {row['category']}")
+    print(f"Subject:  {row['subject']}")
+    print(f"Body:     {str(row['body'])[:200]}")
+
+#  False Negatives: phishing missed as legitimate 
+fn = errors[(errors["label"] == "phishing") & (errors["predicted"] == "legitimate")]
+print(f"\nFALSE NEGATIVES ({len(fn)})")
+print("Phishing emails that slipped through as legitimate:\n")
+for i, row in fn.iterrows():
+    print(f"Category: {row['category']}")
+    print(f"Subject:  {row['subject']}")
+    print(f"Body:     {str(row['body'])[:200]}")
+
+#  Category breakdown of errors 
+print(f"\nERROR BREAKDOWN BY CATEGORY")
+print(errors["category"].value_counts())
+
+
+
+FILE analyse_errors_by_source.py
+import pandas as pd
+import pickle
+import torch
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+
+WIDTH = 66
+
+
+def section(text):
+    print(text.center(WIDTH))
+
+
+# LOAD TEST SET
+test = pd.read_csv("test_combined.csv")
+test["text"] = test["subject"].fillna("") + " " + test["body"].fillna("")
+
+# Synthetic categories vs real categories, so FP/FN can be split by source
+REAL_CATEGORIES = {"real_enron", "real_historical_phishing"}
+test["source"] = test["category"].apply(lambda c: "real" if c in REAL_CATEGORIES else "synthetic")
+
+# RANDOM FOREST PREDICTIONS
+with open("rf_pipeline_combined.pkl", "rb") as f:
+    rf_pipeline = pickle.load(f)
+
+test["rf_pred"] = rf_pipeline["model"].predict(rf_pipeline["vectoriser"].transform(test["text"]))
+
+# DISTILBERT PREDICTIONS
+if torch.backends.mps.is_available():
+    device = torch.device("mps")
+elif torch.cuda.is_available():
+    device = torch.device("cuda")
+else:
+    device = torch.device("cpu")
+
+tokeniser = DistilBertTokenizer.from_pretrained("distilbert_phishing")
+db_model = DistilBertForSequenceClassification.from_pretrained("distilbert_phishing")
+db_model.to(device)
+db_model.eval()
+
+id2label = {0: "legitimate", 1: "phishing"}
+db_preds = []
+batch_size = 16
+texts = test["text"].tolist()
+
+with torch.no_grad():
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i + batch_size]
+        encodings = tokeniser(batch, truncation=True, padding="max_length", max_length=128, return_tensors="pt")
+        encodings = {k: v.to(device) for k, v in encodings.items()}
+        outputs = db_model(**encodings)
+        batch_preds = torch.argmax(outputs.logits, dim=1).cpu().tolist()
+        db_preds.extend([id2label[p] for p in batch_preds])
+
+test["db_pred"] = db_preds
+
+
+# CORE ANALYSIS FUNCTION - run once per model
+def analyse(model_label, pred_col):
+    section(f"{model_label} - FAILURE ANALYSIS (TEST SET)")
+
+    df = test.copy()
+    df["correct"] = df["label"] == df[pred_col]
+    errors = df[~df["correct"]]
+
+    total_errors = len(errors)
+    fp = errors[(errors["label"] == "legitimate") & (errors[pred_col] == "phishing")]
+    fn = errors[(errors["label"] == "phishing") & (errors[pred_col] == "legitimate")]
+
+    print(f"\nTotal test emails : {len(df)}")
+    print(f"Total misclassified: {total_errors}  ({fp.shape[0]} false positives, {fn.shape[0]} false negatives)")
+
+    # FALSE POSITIVE RATE, SPLIT BY SOURCE
+    print("\nFALSE POSITIVE RATE BY SOURCE  (legitimate emails wrongly flagged)")
+    print(f"  {'Source':<24}{'Legitimate emails':>20}{'False positives':>17}{'FP rate':>9}")
+    for source in ["synthetic", "real"]:
+        legit_this_source = df[(df["label"] == "legitimate") & (df["source"] == source)]
+        fp_this_source = fp[fp["source"] == source]
+        n_legit = len(legit_this_source)
+        n_fp = len(fp_this_source)
+        rate = (n_fp / n_legit * 100) if n_legit else 0.0
+        label = "Synthetic (modern)" if source == "synthetic" else "Real (Enron)"
+        print(f"  {label:<24}{n_legit:>20}{n_fp:>17}{rate:>8.2f}%")
+
+    # FALSE NEGATIVE RATE, SPLIT BY SOURCE
+    print("\nFALSE NEGATIVE RATE BY SOURCE  (phishing emails missed)")
+    print(f"  {'Source':<24}{'Phishing emails':>20}{'False negatives':>17}{'FN rate':>9}")
+    for source in ["synthetic", "real"]:
+        phish_this_source = df[(df["label"] == "phishing") & (df["source"] == source)]
+        fn_this_source = fn[fn["source"] == source]
+        n_phish = len(phish_this_source)
+        n_fn = len(fn_this_source)
+        rate = (n_fn / n_phish * 100) if n_phish else 0.0
+        label = "Synthetic (modern)" if source == "synthetic" else "Real (historical)"
+        print(f"  {label:<24}{n_phish:>20}{n_fn:>17}{rate:>8.2f}%")
+
+    # ERROR BREAKDOWN BY CATEGORY
+    print("\nERRORS BY CATEGORY")
+    if len(errors):
+        counts = errors["category"].value_counts()
+        for cat, n in counts.items():
+            print(f"  {cat:<30}{n:>10}")
+    else:
+        print("  No errors.")
+
+    print()
+    return {
+        "total_errors": total_errors,
+        "fp_synthetic_rate": (len(fp[fp["source"] == "synthetic"]) / max(len(df[(df["label"] == "legitimate") & (df["source"] == "synthetic")]), 1)) * 100,
+        "fp_real_rate": (len(fp[fp["source"] == "real"]) / max(len(df[(df["label"] == "legitimate") & (df["source"] == "real")]), 1)) * 100,
+        "fn_synthetic_rate": (len(fn[fn["source"] == "synthetic"]) / max(len(df[(df["label"] == "phishing") & (df["source"] == "synthetic")]), 1)) * 100,
+        "fn_real_rate": (len(fn[fn["source"] == "real"]) / max(len(df[(df["label"] == "phishing") & (df["source"] == "real")]), 1)) * 100,
+    }
+
+
+rf_results = analyse("RANDOM FOREST", "rf_pred")
+db_results = analyse("DISTILBERT", "db_pred")
+
+
+# SIDE BY SIDE COMPARISON (this is the RQ1 evidence)
+section("RQ1 EVIDENCE - FALSE POSITIVE RATE ON MODERN EMAIL")
+print(f"\n  {'Metric':<32}{'Random Forest':>16}{'DistilBERT':>16}")
+print(f"  {'FP rate - synthetic (modern)':<32}{rf_results['fp_synthetic_rate']:>15.2f}%{db_results['fp_synthetic_rate']:>15.2f}%")
+print(f"  {'FP rate - real (Enron)':<32}{rf_results['fp_real_rate']:>15.2f}%{db_results['fp_real_rate']:>15.2f}%")
+print(f"  {'FN rate - synthetic (modern)':<32}{rf_results['fn_synthetic_rate']:>15.2f}%{db_results['fn_synthetic_rate']:>15.2f}%")
+print(f"  {'FN rate - real (historical)':<32}{rf_results['fn_real_rate']:>15.2f}%{db_results['fn_real_rate']:>15.2f}%")
+print()
+
+
+
+FILE edge_case_stress_test.py
+import pickle
+import torch
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+
+WIDTH = 78
+
+
+# EDGE CASE A: OLD STYLE PHISHING
+old_style_phishing = [
+    ("Lottery scam", "phishing",
+     "CONGRATULATIONS WINNER!!!",
+     "Dear Beneficiary, We are pleased to inform you that your email address "
+     "has WON the sum of $2,500,000.00 USD in the International Email Lottery "
+     "Program. To claim your prize kindly send your full name, address, "
+     "telephone number and a copy of your ID to our claims agent immediately. "
+     "This offer expires in 48 hours. God bless you."),
+
+    ("Nigerian prince advance-fee", "phishing",
+     "URGENT BUSINESS PROPOSAL",
+     "Dear Sir/Madam, I am Prince Abassi, son of the late king. I have the sum "
+     "of $18,500,000 trapped in a bank and I need a trustworthy foreign partner "
+     "to help me transfer these funds. You will receive 30 percent for your "
+     "assistance. Please reply urgently with your bank details so we can "
+     "proceed with this transaction. This is 100 percent risk free."),
+
+    ("Fake tax threat", "phishing",
+     "FINAL NOTICE - IMMEDIATE ACTION REQUIRED",
+     "THIS IS YOUR FINAL NOTICE FROM THE TAX DEPARTMENT. Our records indicate "
+     "you owe back taxes and a warrant has been issued for your arrest. You "
+     "must call our agent within 24 HOURS and pay via gift cards to avoid "
+     "legal action. Failure to comply will result in immediate prosecution."),
+
+    ("Romance scam", "phishing",
+     "i need your help my love",
+     "hello dear how are you today i hope this meet you well. i am writing "
+     "to you becouse i need someone i can trust. my late husband left me "
+     "alot of money but i cannot access it without help from a foreigner "
+     "like you. please contact me back so we can talk more about this "
+     "God bless."),
+
+    ("Generic account scare", "phishing",
+     "Your Computer Has Been Infected!!",
+     "WARNING WARNING WARNING your computer has detected 5 VIRUSES. Click "
+     "here now to remove them before your files are deleted forever. Do "
+     "not close this window. Call our technical support hotline immediately "
+     "for urgent assistance before it is too late."),
+]
+
+
+# EDGE CASE B: MODERN LEGITIMATE EMAIL
+novel_legitimate = [
+    ("Medical appointment reminder", "legitimate",
+     "Appointment reminder: Tuesday 10:30am",
+     "Hi Sarah, this is a reminder of your upcoming appointment with Dr. "
+     "Chen on Tuesday at 10:30am at the Riverside Health Centre. Please "
+     "arrive 10 minutes early to complete registration. If you need to "
+     "reschedule, call the clinic on 020 7946 0958. We look forward to "
+     "seeing you."),
+
+    ("Calendar meeting invite", "legitimate",
+     "Invitation: Weekly Team Sync @ Thu 2pm",
+     "You have been invited to the following event. Weekly Team Sync. "
+     "Thursday, 2:00pm - 2:30pm. Video call link will be added closer to "
+     "the time. Organiser: James Whitfield. Please respond to confirm your "
+     "attendance so we can plan the agenda accordingly."),
+
+    ("Flight booking confirmation", "legitimate",
+     "Your booking is confirmed - Flight BA1487",
+     "Thank you for booking with us. Your flight from London Heathrow to "
+     "Edinburgh on 14 August is confirmed. Departure 09:15, arrival 10:35. "
+     "Booking reference QX7T2M. Online check-in opens 24 hours before "
+     "departure. Baggage allowance and terms are available in your account."),
+
+    ("Streaming service renewal notice", "legitimate",
+     "Your subscription renews soon",
+     "Hi there, just a heads up that your monthly subscription will renew "
+     "on the 3rd of next month at the current rate. No action is needed if "
+     "you'd like to continue watching. You can review or manage your plan "
+     "any time from your account settings page."),
+
+    ("University enrolment confirmation", "legitimate",
+     "Enrolment confirmed for Autumn term",
+     "Dear student, this confirms your enrolment onto the MSc Advanced "
+     "Computer Science programme for the Autumn term. Your timetable and "
+     "reading list are now available on the student portal. If you have "
+     "any questions about your modules, please contact your programme tutor."),
+
+    ("Gym membership payment receipt", "legitimate",
+     "Payment received - thank you",
+     "This confirms we've received your monthly membership payment. Your "
+     "membership remains active until the next billing date. You can view "
+     "your full payment history and manage your membership from the app "
+     "at any time. Thanks for being a member."),
+]
+
+CASES = old_style_phishing + novel_legitimate
+
+
+# LOAD MODELS
+print("Loading models...\n")
+
+with open("rf_pipeline_combined.pkl", "rb") as f:
+    rf_pipeline = pickle.load(f)
+vectoriser = rf_pipeline["vectoriser"]
+rf_model = rf_pipeline["model"]
+
+if torch.backends.mps.is_available():
+    device = torch.device("mps")
+elif torch.cuda.is_available():
+    device = torch.device("cuda")
+else:
+    device = torch.device("cpu")
+
+tokeniser = DistilBertTokenizer.from_pretrained("distilbert_phishing")
+db_model = DistilBertForSequenceClassification.from_pretrained("distilbert_phishing")
+db_model.to(device)
+db_model.eval()
+id2label = {0: "legitimate", 1: "phishing"}
+
+
+def predict_rf(text):
+    features = vectoriser.transform([text])
+    pred = rf_model.predict(features)[0]
+    proba = rf_model.predict_proba(features)[0]
+    classes = list(rf_model.classes_)
+    conf = proba[classes.index(pred)]
+    return pred, conf
+
+
+def predict_db(text):
+    encoding = tokeniser(text, truncation=True, padding="max_length", max_length=128, return_tensors="pt")
+    encoding = {k: v.to(device) for k, v in encoding.items()}
+    with torch.no_grad():
+        outputs = db_model(**encoding)
+        probs = torch.softmax(outputs.logits, dim=1)[0]
+        pred_id = torch.argmax(probs).item()
+        conf = probs[pred_id].item()
+    return id2label[pred_id], conf
+
+
+# RUN AND REPORT
+print("EDGE CASE STRESS TEST - OUT OF DISTRIBUTION EMAILS".center(WIDTH))
+print(f"\n{len(old_style_phishing)} old-style phishing + {len(novel_legitimate)} novel legitimate "
+      f"= {len(CASES)} hand-written cases, none seen during training.\n")
+
+rf_correct = 0
+db_correct = 0
+rf_errors = []
+db_errors = []
+
+header = f"{'#':<3}{'Case':<32}{'Expected':<12}{'RF':<20}{'DistilBERT':<20}"
+print(header)
+
+for i, (name, expected, subject, body) in enumerate(CASES, start=1):
+    text = subject + " " + body
+
+    rf_pred, rf_conf = predict_rf(text)
+    db_pred, db_conf = predict_db(text)
+
+    rf_ok = "OK" if rf_pred == expected else "WRONG"
+    db_ok = "OK" if db_pred == expected else "WRONG"
+
+    if rf_pred == expected:
+        rf_correct += 1
+    else:
+        rf_errors.append((name, expected, rf_pred, rf_conf))
+
+    if db_pred == expected:
+        db_correct += 1
+    else:
+        db_errors.append((name, expected, db_pred, db_conf))
+
+    rf_str = f"{rf_pred} ({rf_conf:.2f}) [{rf_ok}]"
+    db_str = f"{db_pred} ({db_conf:.2f}) [{db_ok}]"
+    print(f"{i:<3}{name:<32}{expected:<12}{rf_str:<20}{db_str:<20}")
+
+print(f"\nRandom Forest : {rf_correct}/{len(CASES)} correct  "
+      f"({rf_correct/len(CASES)*100:.1f}%)")
+print(f"DistilBERT    : {db_correct}/{len(CASES)} correct  "
+      f"({db_correct/len(CASES)*100:.1f}%)\n")
+
+if rf_errors:
+    print("Random Forest errors:")
+    for name, exp, pred, conf in rf_errors:
+        print(f"  - {name}: expected {exp}, predicted {pred} (confidence {conf:.2f})")
+    print()
+
+if db_errors:
+    print("DistilBERT errors:")
+    for name, exp, pred, conf in db_errors:
+        print(f"  - {name}: expected {exp}, predicted {pred} (confidence {conf:.2f})")
+    print()
+
+
+
+    FILE interpret_models.py
+    import pandas as pd
+import numpy as np
+import pickle
+import torch
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
+from collections import defaultdict
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+
+os.makedirs("plots", exist_ok=True)
+
+TOP_N = 20
+SAMPLE_SIZE = 50
+HEATMAP_EXAMPLES = 4
+
+device = torch.device("cpu")
+
+# LOAD DATA AND MODELS
+print("Loading test set and models...\n")
+
+test = pd.read_csv("test_combined.csv")
+test["text"] = test["subject"].fillna("") + " " + test["body"].fillna("")
+
+with open("rf_pipeline_combined.pkl", "rb") as f:
+    rf_pipeline = pickle.load(f)
+vectoriser = rf_pipeline["vectoriser"]
+rf_model = rf_pipeline["model"]
+
+tokeniser = DistilBertTokenizer.from_pretrained("distilbert_phishing")
+db_model = DistilBertForSequenceClassification.from_pretrained("distilbert_phishing")
+db_model.to(device)
+db_model.eval()
+
+id2label = {0: "legitimate", 1: "phishing"}
+
+
+# PART 1: RANDOM FOREST - GINI IMPORTANCES
+print("PART 1: RANDOM FOREST - GINI FEATURE IMPORTANCES")
+
+feature_names = vectoriser.get_feature_names_out()
+importances = rf_model.feature_importances_
+top_indices = np.argsort(importances)[::-1][:TOP_N]
+
+
+all_features = vectoriser.transform(test["text"])
+is_phishing = (test["label"] == "phishing").values
+
+rf_rows = []
+for idx in top_indices:
+    column = all_features[:, idx].toarray().ravel()
+    mean_phish = column[is_phishing].mean()
+    mean_legit = column[~is_phishing].mean()
+    direction = "phishing" if mean_phish > mean_legit else "legitimate"
+    rf_rows.append({
+        "feature": feature_names[idx],
+        "importance": importances[idx],
+        "direction": direction,
+        "mean_phishing": mean_phish,
+        "mean_legitimate": mean_legit
+    })
+
+rf_top = pd.DataFrame(rf_rows)
+
+print(f"\n{'Rank':<6}{'Feature':<24}{'Gini':<12}{'Indicates':<12}")
+for i, row in rf_top.iterrows():
+    print(f"{i+1:<6}{row['feature']:<24}{row['importance']:<12.5f}{row['direction']:<12}")
+
+# Plot with direction encoded by colour
+plt.figure(figsize=(10, 7))
+colours = ["indianred" if d == "phishing" else "steelblue" for d in rf_top["direction"]]
+plt.barh(range(len(rf_top)), rf_top["importance"], color=colours)
+plt.yticks(range(len(rf_top)), rf_top["feature"])
+plt.gca().invert_yaxis()
+plt.xlabel("Gini Importance")
+plt.ylabel("Feature")
+plt.title(f"Random Forest - Top {TOP_N} Feature Importances by Class Indicated")
+handles = [plt.Rectangle((0, 0), 1, 1, color="indianred"),
+           plt.Rectangle((0, 0), 1, 1, color="steelblue")]
+plt.legend(handles, ["Indicates phishing", "Indicates legitimate"], loc="lower right")
+plt.tight_layout()
+plt.savefig("plots/rf_gini_directional.png", dpi=150)
+plt.close()
+print("\nSaved: plots/rf_gini_directional.png")
+
+
+# PART 2: DISTILBERT - GRADIENT x INPUT ATTRIBUTION
+print("\nPART 2: DISTILBERT - GRADIENT x INPUT TOKEN ATTRIBUTION")
+
+
+def token_saliency(text):
+    """Gradient x input attribution for one email.
+
+    Returns the wordpiece tokens, their saliency scores, and the
+    predicted label. Special and padding tokens are removed.
+    """
+    encoding = tokeniser(
+        text, truncation=True, padding="max_length",
+        max_length=128, return_tensors="pt"
+    )
+    input_ids = encoding["input_ids"].to(device)
+    attention_mask = encoding["attention_mask"].to(device)
+
+    embed_layer = db_model.get_input_embeddings()
+    inputs_embeds = embed_layer(input_ids)
+    inputs_embeds.retain_grad()
+
+    outputs = db_model(inputs_embeds=inputs_embeds, attention_mask=attention_mask)
+    pred_id = torch.argmax(outputs.logits, dim=1).item()
+
+    db_model.zero_grad()
+    outputs.logits[0, pred_id].backward()
+
+    # gradient x input, summed over the embedding dimension
+    grads = inputs_embeds.grad[0]
+    scores = (grads * inputs_embeds[0]).sum(dim=-1).abs().detach().numpy()
+
+    tokens = tokeniser.convert_ids_to_tokens(input_ids[0])
+    mask = attention_mask[0].numpy()
+
+    def is_word(token):
+        return any(c.isalnum() for c in token)
+
+    keep_tokens = []
+    keep_scores = []
+    for tok, score, m in zip(tokens, scores, mask):
+        if m == 0 or tok in ("[CLS]", "[SEP]", "[PAD]") or not is_word(tok):
+            continue
+        keep_tokens.append(tok)
+        keep_scores.append(float(score))
+
+    return keep_tokens, np.array(keep_scores), id2label[pred_id]
+
+
+def merge_wordpieces(tokens, scores):
+    """Merge ## continuation pieces back into whole words.
+
+    A word takes the maximum saliency of its constituent pieces, so a
+    strong signal on any piece is not diluted by averaging.
+    """
+    words = []
+    word_scores = []
+    for tok, score in zip(tokens, scores):
+        if tok.startswith("##") and words:
+            words[-1] += tok[2:]
+            word_scores[-1] = max(word_scores[-1], score)
+        else:
+            words.append(tok)
+            word_scores.append(score)
+    return words, np.array(word_scores)
+
+
+# Sample emails for aggregation, balanced across the two classes
+sample = pd.concat([
+    test[test["label"] == "phishing"].sample(n=SAMPLE_SIZE // 2, random_state=42),
+    test[test["label"] == "legitimate"].sample(n=SAMPLE_SIZE // 2, random_state=42)
+]).reset_index(drop=True)
+
+print(f"\nComputing attribution for {len(sample)} emails "
+      f"({SAMPLE_SIZE // 2} phishing, {SAMPLE_SIZE // 2} legitimate)...")
+
+# Aggregate saliency per word, kept separate by predicted class
+agg_phishing = defaultdict(list)
+agg_legitimate = defaultdict(list)
+per_email = []
+
+for i, row in sample.iterrows():
+    tokens, scores, pred = token_saliency(row["text"])
+    if len(tokens) == 0:
+        continue
+    words, word_scores = merge_wordpieces(tokens, scores)
+
+    # normalise within the email so long and short emails contribute equally
+    if word_scores.max() > 0:
+        word_scores = word_scores / word_scores.max()
+
+    target = agg_phishing if pred == "phishing" else agg_legitimate
+    for w, s in zip(words, word_scores):
+        target[w].append(s)
+
+    per_email.append({
+        "index": i,
+        "true_label": row["label"],
+        "predicted": pred,
+        "category": row["category"],
+        "words": words,
+        "scores": word_scores
+    })
+
+    if (i + 1) % 10 == 0:
+        print(f"  processed {i + 1}/{len(sample)}")
+
+
+def top_words(agg, n=TOP_N, min_count=2):
+    """Mean saliency per word, requiring the word to appear more than once
+    so that single high-scoring outliers do not dominate the ranking."""
+    rows = [(w, float(np.mean(v)), len(v)) for w, v in agg.items() if len(v) >= min_count]
+    rows.sort(key=lambda r: r[1], reverse=True)
+    return rows[:n]
+
+
+phish_top = top_words(agg_phishing)
+legit_top = top_words(agg_legitimate)
+
+print(f"\nTop {TOP_N} tokens by mean saliency - emails predicted PHISHING")
+print(f"{'Rank':<6}{'Token':<24}{'Mean saliency':<16}{'Occurrences':<12}")
+for i, (w, s, c) in enumerate(phish_top, start=1):
+    print(f"{i:<6}{w:<24}{s:<16.4f}{c:<12}")
+
+print(f"\nTop {TOP_N} tokens by mean saliency - emails predicted LEGITIMATE")
+print(f"{'Rank':<6}{'Token':<24}{'Mean saliency':<16}{'Occurrences':<12}")
+for i, (w, s, c) in enumerate(legit_top, start=1):
+    print(f"{i:<6}{w:<24}{s:<16.4f}{c:<12}")
+
+# Plot aggregated saliency
+fig, axes = plt.subplots(1, 2, figsize=(14, 7))
+for ax, data, title, colour in [
+    (axes[0], phish_top, "Predicted PHISHING", "indianred"),
+    (axes[1], legit_top, "Predicted LEGITIMATE", "steelblue")
+]:
+    words = [r[0] for r in data]
+    vals = [r[1] for r in data]
+    ax.barh(range(len(words)), vals, color=colour)
+    ax.set_yticks(range(len(words)))
+    ax.set_yticklabels(words)
+    ax.invert_yaxis()
+    ax.set_xlabel("Mean saliency (gradient x input)")
+    ax.set_title(f"DistilBERT - {title}")
+plt.tight_layout()
+plt.savefig("plots/distilbert_token_saliency.png", dpi=150)
+plt.close()
+print("\nSaved: plots/distilbert_token_saliency.png")
+
+
+# PART 3: PER-EMAIL SALIENCY HEATMAPS
+print("\nPART 3: PER-EMAIL SALIENCY HEATMAPS")
+
+
+def plot_heatmap(entry, filename, per_row=8, max_words=48):
+    """Render one email as a grid of tokens shaded by saliency."""
+    words = entry["words"][:max_words]
+    scores = entry["scores"][:max_words]
+
+    rows = int(np.ceil(len(words) / per_row))
+    grid = np.zeros((rows, per_row))
+    labels = [["" for _ in range(per_row)] for _ in range(rows)]
+
+    for i, (w, s) in enumerate(zip(words, scores)):
+        r, c = divmod(i, per_row)
+        grid[r, c] = s
+        labels[r][c] = w
+
+    fig, ax = plt.subplots(figsize=(per_row * 1.7, rows * 0.75))
+    im = ax.imshow(grid, cmap="Reds", aspect="auto", vmin=0, vmax=1)
+
+    for r in range(rows):
+        for c in range(per_row):
+            if labels[r][c]:
+                shade = "white" if grid[r, c] > 0.6 else "black"
+                ax.text(c, r, labels[r][c], ha="center", va="center",
+                        fontsize=8, color=shade)
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+    title = (f"True: {entry['true_label']}  |  Predicted: {entry['predicted']}  "
+             f"|  Category: {entry['category']}")
+    ax.set_title(title, fontsize=10)
+    fig.colorbar(im, ax=ax, label="Normalised saliency", fraction=0.02)
+    plt.tight_layout()
+    plt.savefig(filename, dpi=150)
+    plt.close()
+
+
+# Pick a spread: correct phishing, correct legitimate, and any errors
+correct_phish = [e for e in per_email if e["true_label"] == "phishing" and e["predicted"] == "phishing"]
+correct_legit = [e for e in per_email if e["true_label"] == "legitimate" and e["predicted"] == "legitimate"]
+errors = [e for e in per_email if e["true_label"] != e["predicted"]]
+
+chosen = []
+if correct_phish:
+    chosen.append(("correct_phishing", correct_phish[0]))
+if correct_legit:
+    chosen.append(("correct_legitimate", correct_legit[0]))
+for j, e in enumerate(errors[:HEATMAP_EXAMPLES - len(chosen)]):
+    chosen.append((f"misclassified_{j+1}", e))
+
+for name, entry in chosen:
+    fname = f"plots/saliency_heatmap_{name}.png"
+    plot_heatmap(entry, fname)
+    print(f"Saved: {fname}  ({entry['true_label']} -> {entry['predicted']})")
+
+if not errors:
+    print("Note: no misclassified emails in this sample, so only correct "
+          "examples are shown.")
+
+
+# PART 4: RQ2 - SIGNAL OVERLAP BETWEEN THE MODELS
+print("\nPART 4: RQ2 - DO THE TWO MODELS RELY ON THE SAME SIGNALS?")
+
+
+rf_phish_terms = set()
+rf_legit_terms = set()
+for _, row in rf_top.iterrows():
+    terms = row["feature"].split()
+    if row["direction"] == "phishing":
+        rf_phish_terms.update(terms)
+    else:
+        rf_legit_terms.update(terms)
+
+db_phish_terms = set(w for w, _, _ in phish_top)
+db_legit_terms = set(w for w, _, _ in legit_top)
+
+phish_overlap = rf_phish_terms & db_phish_terms
+legit_overlap = rf_legit_terms & db_legit_terms
+
+rf_all = rf_phish_terms | rf_legit_terms
+db_all = db_phish_terms | db_legit_terms
+overall_overlap = rf_all & db_all
+union = rf_all | db_all
+jaccard = len(overall_overlap) / len(union) if union else 0.0
+
+print(f"\nRandom Forest  - distinct terms in top {TOP_N}: {len(rf_all)}")
+print(f"DistilBERT     - distinct terms in top {TOP_N}: {len(db_all)}")
+print(f"\nShared terms overall : {len(overall_overlap)}")
+print(f"Jaccard similarity   : {jaccard:.4f}")
+
+print(f"\nShared phishing-indicating terms ({len(phish_overlap)}):")
+print(f"  {sorted(phish_overlap) if phish_overlap else 'none'}")
+print(f"\nShared legitimate-indicating terms ({len(legit_overlap)}):")
+print(f"  {sorted(legit_overlap) if legit_overlap else 'none'}")
+
+print(f"\nTerms unique to Random Forest ({len(rf_all - db_all)}):")
+print(f"  {sorted(rf_all - db_all)}")
+print(f"\nTerms unique to DistilBERT ({len(db_all - rf_all)}):")
+print(f"  {sorted(db_all - rf_all)}")
+
+# Overlap visualisation
+plt.figure(figsize=(7, 5))
+categories = ["Unique to\nRandom Forest", "Shared", "Unique to\nDistilBERT"]
+counts = [len(rf_all - db_all), len(overall_overlap), len(db_all - rf_all)]
+bars = plt.bar(categories, counts, color=["steelblue", "mediumpurple", "darkorange"])
+for bar, val in zip(bars, counts):
+    plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.3,
+             str(val), ha="center", va="bottom", fontsize=11)
+plt.ylabel("Number of terms")
+plt.title(f"Signal Overlap Between Models (top {TOP_N} each)\n"
+          f"Jaccard similarity = {jaccard:.3f}")
+plt.tight_layout()
+plt.savefig("plots/signal_overlap.png", dpi=150)
+plt.close()
+print("\nSaved: plots/signal_overlap.png")
+
+
+# SAVE NUMERIC RESULTS FOR THE REPORT
+rf_top.to_csv("interpretability_rf_features.csv", index=False)
+pd.DataFrame(phish_top, columns=["token", "mean_saliency", "occurrences"]).to_csv(
+    "interpretability_db_phishing_tokens.csv", index=False)
+pd.DataFrame(legit_top, columns=["token", "mean_saliency", "occurrences"]).to_csv(
+    "interpretability_db_legitimate_tokens.csv", index=False)
+
+print("\nSaved numeric results:")
+print("  interpretability_rf_features.csv")
+print("  interpretability_db_phishing_tokens.csv")
+print("  interpretability_db_legitimate_tokens.csv")
+
+print("\nINTERPRETABILITY ANALYSIS COMPLETE")
+
+
+
+
+FILE cli_tool.py
+import argparse
+import os
+import sys
+import time
+import pickle
+import numpy as np
+import pandas as pd
+import torch
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+
+DIRECTIONS_CACHE = "rf_feature_directions.csv"
+WIDTH = 64
+
+
+def section(text):
+    print(text.center(WIDTH))
+
+
+# INPUT HANDLING
+def get_input_text(args):
+    if args.file:
+        with open(args.file, "r", encoding="utf-8", errors="ignore") as f:
+            raw = f.read()
+    elif args.text:
+        raw = args.text
+    else:
+        print("Paste the email text below, then press Ctrl-D (Mac/Linux) "
+              "or Ctrl-Z then Enter (Windows) to finish:\n")
+        raw = sys.stdin.read()
+
+    raw = raw.strip()
+    subject = args.subject or ""
+    body = raw
+
+    # allow "Subject: " as the first line if no subject was given
+    lines = raw.split("\n", 1)
+    if not subject and lines[0].lower().startswith("subject:"):
+        subject = lines[0][len("subject:"):].strip()
+        body = lines[1].strip() if len(lines) > 1 else ""
+
+    if not raw:
+        print("No email text provided.")
+        sys.exit(1)
+
+    return subject, body
+
+
+# RANDOM FOREST - LOAD + EXPLAIN
+def load_rf():
+    with open("rf_pipeline_combined.pkl", "rb") as f:
+        pipeline = pickle.load(f)
+    return pipeline["vectoriser"], pipeline["model"]
+
+
+def build_or_load_directions(vectoriser, rf_model):
+    """Direction (which class each feature points toward) isn't part of
+    Gini importance itself, so it's derived once from the test set and
+    cached to disk. Degrades gracefully if the cache and the test set
+    are both unavailable - importance is still shown, just not direction.
+    """
+    if os.path.exists(DIRECTIONS_CACHE):
+        return pd.read_csv(DIRECTIONS_CACHE).set_index("feature")
+
+    if not os.path.exists("test_combined.csv"):
+        return None
+
+    print("Building feature-direction reference (first run only)...")
+    test = pd.read_csv("test_combined.csv")
+    test["text"] = test["subject"].fillna("") + " " + test["body"].fillna("")
+
+    dense = vectoriser.transform(test["text"]).toarray()
+    is_phishing = (test["label"] == "phishing").values
+    names = vectoriser.get_feature_names_out()
+    importances = rf_model.feature_importances_
+
+    mean_phish = dense[is_phishing].mean(axis=0)
+    mean_legit = dense[~is_phishing].mean(axis=0)
+    direction = np.where(mean_phish > mean_legit, "phishing", "legitimate")
+
+    df = pd.DataFrame({
+        "feature": names,
+        "importance": importances,
+        "direction": direction
+    }).set_index("feature")
+    df.to_csv(DIRECTIONS_CACHE)
+    print(f"Saved: {DIRECTIONS_CACHE}\n")
+    return df
+
+
+def explain_rf(vectoriser, rf_model, directions, text, top_n=5):
+    """Of the features that actually appear in this email, return the
+    top N by global Gini importance - a per-email explanation grounded
+    in the model's overall learned importances."""
+    vec = vectoriser.transform([text])
+    present_idx = vec.nonzero()[1]
+    if len(present_idx) == 0:
+        return []
+
+    names = vectoriser.get_feature_names_out()
+    importances = rf_model.feature_importances_
+
+    rows = []
+    for idx in present_idx:
+        name = names[idx]
+        imp = importances[idx]
+        if directions is not None and name in directions.index:
+            direction = directions.loc[name, "direction"]
+        else:
+            direction = "unknown"
+        rows.append((name, imp, direction))
+
+    rows.sort(key=lambda r: r[1], reverse=True)
+    return rows[:top_n]
+
+
+def predict_rf(vectoriser, rf_model, text, n_runs=5):
+    features = vectoriser.transform([text])
+
+    rf_model.predict(features)
+    timings = []
+    for _ in range(n_runs):
+        start = time.perf_counter()
+        pred = rf_model.predict(features)[0]
+        end = time.perf_counter()
+        timings.append((end - start) * 1000)
+    proba = rf_model.predict_proba(features)[0]
+    classes = list(rf_model.classes_)
+    conf = proba[classes.index(pred)]
+    return pred, conf, np.mean(timings)
+
+
+# DISTILBERT - LOAD + EXPLAIN
+def load_distilbert():
+    device = torch.device("cpu")  # single-email latency, consistent across machines
+    tokeniser = DistilBertTokenizer.from_pretrained("distilbert_phishing")
+    model = DistilBertForSequenceClassification.from_pretrained("distilbert_phishing")
+    model.to(device)
+    model.eval()
+    return tokeniser, model, device
+
+
+def predict_and_explain_db(tokeniser, model, device, text, top_n=5, n_runs=5):
+    encoding = tokeniser(text, truncation=True, padding="max_length",
+                          max_length=128, return_tensors="pt")
+    input_ids = encoding["input_ids"].to(device)
+    attention_mask = encoding["attention_mask"].to(device)
+
+    # warm-up + averaged latency, same fix as the RF side
+    with torch.no_grad():
+        model(input_ids=input_ids, attention_mask=attention_mask)
+    timings = []
+    with torch.no_grad():
+        for _ in range(n_runs):
+            start = time.perf_counter()
+            model(input_ids=input_ids, attention_mask=attention_mask)
+            end = time.perf_counter()
+            timings.append((end - start) * 1000)
+
+    # separate pass with grad enabled for attribution
+    embed_layer = model.get_input_embeddings()
+    inputs_embeds = embed_layer(input_ids)
+    inputs_embeds.retain_grad()
+
+    outputs = model(inputs_embeds=inputs_embeds, attention_mask=attention_mask)
+    probs = torch.softmax(outputs.logits, dim=1)[0]
+    pred_id = torch.argmax(probs).item()
+    conf = probs[pred_id].item()
+
+    model.zero_grad()
+    outputs.logits[0, pred_id].backward()
+    grads = inputs_embeds.grad[0]
+    scores = (grads * inputs_embeds[0]).sum(dim=-1).abs().detach().numpy()
+
+    tokens = tokeniser.convert_ids_to_tokens(input_ids[0])
+    mask = attention_mask[0].numpy()
+
+    words, word_scores = [], []
+    for tok, score, m in zip(tokens, scores, mask):
+        if m == 0 or tok in ("[CLS]", "[SEP]", "[PAD]"):
+            continue
+        if tok.startswith("##") and words:
+            words[-1] += tok[2:]
+            word_scores[-1] = max(word_scores[-1], float(score))
+        else:
+            words.append(tok)
+            word_scores.append(float(score))
+
+    def is_word(token):
+        return any(c.isalnum() for c in token)
+
+    ranked = sorted(
+        [(w, s) for w, s in zip(words, word_scores) if is_word(w)],
+        key=lambda r: r[1], reverse=True
+    )
+    id2label = {0: "legitimate", 1: "phishing"}
+    return id2label[pred_id], conf, np.mean(timings), ranked[:top_n]
+
+
+# MAIN
+def main():
+    parser = argparse.ArgumentParser(
+        description="Compare Random Forest and DistilBERT on a single email, "
+                     "with a short explanation of each prediction."
+    )
+    parser.add_argument("--file", type=str, help="Path to a .txt file containing the email")
+    parser.add_argument("--text", type=str, help="Raw email text")
+    parser.add_argument("--subject", type=str, default="", help="Optional subject line")
+    args = parser.parse_args()
+
+    subject, body = get_input_text(args)
+    text = (subject + " " + body).strip()
+
+    section("PHISHING DETECTION - EMAIL ANALYSIS")
+    print(f"\n  Subject : {subject if subject else '(none provided)'}")
+    preview = body[:100] + ("..." if len(body) > 100 else "")
+    print(f"  Body    : {preview}\n")
+
+    print("\nLoading models...")
+    vectoriser, rf_model = load_rf()
+    directions = build_or_load_directions(vectoriser, rf_model)
+    tokeniser, db_model, device = load_distilbert()
+
+    # RANDOM FOREST
+    rf_pred, rf_conf, rf_latency = predict_rf(vectoriser, rf_model, text)
+    rf_top = explain_rf(vectoriser, rf_model, directions, text)
+
+    print("\nRANDOM FOREST")
+    print(f"  Prediction  : {rf_pred}")
+    print(f"  Confidence  : {rf_conf:.4f}")
+    print(f"  Latency     : {rf_latency:.3f} ms  (5 run average, warmup excluded)")
+    if rf_top:
+        print("\n  Top contributing features (present in this email):")
+        for i, (feat, imp, direction) in enumerate(rf_top, start=1):
+            print(f"    {i}. {feat:<20} importance {imp:.4f}  -> {direction}")
+    else:
+        print("\n  No recognised vocabulary from training found in this email.")
+
+    # DISTILBERT
+    db_pred, db_conf, db_latency, db_top = predict_and_explain_db(
+        tokeniser, db_model, device, text
+    )
+
+    print("\nDISTILBERT")
+    print(f"  Prediction  : {db_pred}")
+    print(f"  Confidence  : {db_conf:.4f}")
+    print(f"  Latency     : {db_latency:.3f} ms  (5 run average, warmup excluded)")
+    if db_top:
+        print("\n  Top salient tokens (gradient x input):")
+        for i, (tok, score) in enumerate(db_top, start=1):
+            print(f"    {i}. {tok:<20} saliency {score:.4f}")
+
+    # SUMMARY
+    print()
+    section("SUMMARY")
+    if rf_pred == db_pred:
+        print(f"\n  Both models agree: {rf_pred.upper()}")
+    else:
+        print(f"\n  Models disagree:")
+        print(f"    Random Forest -> {rf_pred}")
+        print(f"    DistilBERT    -> {db_pred}")
+    print(f"\n  Speed: Random Forest is {db_latency / rf_latency:.1f}x faster "
+          f"than DistilBERT on this email")
+    print()
+
+
+if __name__ == "__main__":
+    main()
+
+
+
+FILE print_evaluation_summary.py
+import pandas as pd
+import pickle
+import torch
+from datetime import datetime
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
+WIDTH = 60
+
+
+def section_title(text):
+    print(text.center(WIDTH))
+
+
+def subsection_title(text):
+    print(text)
+
+
+def metric_row(label, value):
+    print(f"  {label:<12}: {value:.4f}")
+
+
+
+# LOAD VALIDATION DATA
+val = pd.read_csv("val_combined.csv")
+val["text"] = val["subject"].fillna("") + " " + val["body"].fillna("")
+val_labels = val["label"]
+label2id = {"legitimate": 0, "phishing": 1}
+val_binary = val_labels.map(label2id)
+
+
+# RANDOM FOREST
+with open("rf_pipeline_combined.pkl", "rb") as f:
+    rf_pipeline = pickle.load(f)
+
+rf_features = rf_pipeline["vectoriser"].transform(val["text"])
+rf_preds = rf_pipeline["model"].predict(rf_features)
+rf_preds_binary = pd.Series(rf_preds).map(label2id)
+
+rf_accuracy = accuracy_score(val_binary, rf_preds_binary)
+rf_precision = precision_score(val_binary, rf_preds_binary)
+rf_recall = recall_score(val_binary, rf_preds_binary)
+rf_f1 = f1_score(val_binary, rf_preds_binary)
+
+# DISTILBERT
+if torch.backends.mps.is_available():
+    device = torch.device("mps")
+elif torch.cuda.is_available():
+    device = torch.device("cuda")
+else:
+    device = torch.device("cpu")
+
+tokenizer = DistilBertTokenizer.from_pretrained("distilbert_phishing")
+db_model = DistilBertForSequenceClassification.from_pretrained("distilbert_phishing")
+db_model.to(device)
+db_model.eval()
+
+db_preds = []
+batch_size = 16
+texts = val["text"].tolist()
+
+with torch.no_grad():
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i + batch_size]
+        encodings = tokenizer(batch, truncation=True, padding="max_length", max_length=128, return_tensors="pt")
+        encodings = {k: v.to(device) for k, v in encodings.items()}
+        outputs = db_model(**encodings)
+        batch_preds = torch.argmax(outputs.logits, dim=1).cpu().tolist()
+        db_preds.extend(batch_preds)
+
+db_accuracy = accuracy_score(val_binary, db_preds)
+db_precision = precision_score(val_binary, db_preds)
+db_recall = recall_score(val_binary, db_preds)
+db_f1 = f1_score(val_binary, db_preds)
+
+
+# PRINT PROFESSIONAL SUMMARY
+print()
+section_title("PHISHING DETECTION - MODEL EVALUATION SUMMARY")
+print(f"  Dataset : val_combined.csv ({len(val)} emails)".ljust(WIDTH))
+print(f"  Device  : {device}".ljust(WIDTH))
+print()
+
+subsection_title("RANDOM FOREST  (TF-IDF + Random Forest)")
+metric_row("Accuracy", rf_accuracy)
+metric_row("Precision", rf_precision)
+metric_row("Recall", rf_recall)
+metric_row("F1 Score", rf_f1)
+print()
+
+subsection_title("DISTILBERT  (fine tuned, 3 epochs)")
+metric_row("Accuracy", db_accuracy)
+metric_row("Precision", db_precision)
+metric_row("Recall", db_recall)
+metric_row("F1 Score", db_f1)
+print()
+
+section_title("SIDE BY SIDE COMPARISON")
+print(f"  {'Metric':<12}{'Random Forest':>16}{'DistilBERT':>16}")
+print(f"  {'Accuracy':<12}{rf_accuracy:>16.4f}{db_accuracy:>16.4f}")
+print(f"  {'Precision':<12}{rf_precision:>16.4f}{db_precision:>16.4f}")
+print(f"  {'Recall':<12}{rf_recall:>16.4f}{db_recall:>16.4f}")
+print(f"  {'F1 Score':<12}{rf_f1:>16.4f}{db_f1:>16.4f}")
+print()
+
+
+
+
+FILE streamlit_app.py
+import streamlit as st
+
+from cli_tool import (
+    load_rf,
+    build_or_load_directions,
+    explain_rf,
+    predict_rf,
+    load_distilbert,
+    predict_and_explain_db,
+)
+
+st.set_page_config(page_title="Phishing Detector", page_icon="\U0001F50E", layout="wide")
+
+
+# MODEL LOADING 
+@st.cache_resource(show_spinner="Loading models (first run only)...")
+def get_models():
+    vectoriser, rf_model = load_rf()
+    directions = build_or_load_directions(vectoriser, rf_model)
+    tokeniser, db_model, device = load_distilbert()
+    return vectoriser, rf_model, directions, tokeniser, db_model, device
+
+
+# PAGE
+st.title("Phishing Detection: Random Forest vs DistilBERT")
+st.caption(
+    "Local demo. Paste an email below to see both models' prediction, "
+    "confidence, latency, and a short explanation of each decision. "
+    "Uses the same prediction functions as cli_tool.py."
+)
+
+with st.sidebar:
+    st.header("About")
+    st.markdown(
+        "**Random Forest**: TF-IDF + 150-tree classifier. Explanation is "
+        "the top Gini-importance features present in the email.\n\n"
+        "**DistilBERT**: fine tuned transformer. Explanation is the top "
+        "tokens by gradient times input saliency, computed live.\n\n"
+        "Both use a 5 run averaged latency measurement with a discarded "
+        "warm up call."
+    )
+    st.divider()
+    st.caption("Divyanshu Gaba | 24176025 | Phishing Detection Project")
+
+tab_paste, tab_file = st.tabs(["Paste email", "Upload .txt file"])
+
+with tab_paste:
+    subject_input = st.text_input("Subject (optional)", key="subject_paste")
+    body_input = st.text_area("Email body", height=220, key="body_paste",
+                               placeholder="Paste the email text here...")
+    analyse_paste = st.button("Analyse", type="primary", key="btn_paste")
+    if analyse_paste:
+        st.session_state["run_subject"] = subject_input
+        st.session_state["run_body"] = body_input
+
+with tab_file:
+    uploaded = st.file_uploader("Choose a .txt file", type=["txt"])
+    analyse_file = st.button("Analyse file", type="primary", key="btn_file")
+    if analyse_file and uploaded is not None:
+        raw = uploaded.read().decode("utf-8", errors="ignore").strip()
+        subject = ""
+        body = raw
+        lines = raw.split("\n", 1)
+        if lines[0].lower().startswith("subject:"):
+            subject = lines[0][len("subject:"):].strip()
+            body = lines[1].strip() if len(lines) > 1 else ""
+        st.session_state["run_subject"] = subject
+        st.session_state["run_body"] = body
+
+
+# RUN + DISPLAY
+if "run_body" in st.session_state:
+    subject = st.session_state["run_subject"]
+    body = st.session_state["run_body"]
+    text = (subject + " " + body).strip()
+
+    if not text:
+        st.error("No email text provided.")
+    else:
+        st.divider()
+        preview = body[:200] + ("..." if len(body) > 200 else "")
+        st.markdown(f"**Subject:** {subject if subject else '_(none provided)_'}")
+        st.markdown(f"**Body preview:** {preview}")
+        st.divider()
+
+        vectoriser, rf_model, directions, tokeniser, db_model, device = get_models()
+
+        with st.spinner("Running both models..."):
+            rf_pred, rf_conf, rf_latency = predict_rf(vectoriser, rf_model, text)
+            rf_top = explain_rf(vectoriser, rf_model, directions, text)
+            db_pred, db_conf, db_latency, db_top = predict_and_explain_db(
+                tokeniser, db_model, device, text
+            )
+
+        col_rf, col_db = st.columns(2)
+
+        with col_rf:
+            st.subheader("Random Forest")
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Prediction", rf_pred.upper())
+            m2.metric("Confidence", f"{rf_conf:.4f}")
+            m3.metric("Latency", f"{rf_latency:.2f} ms")
+            if rf_top:
+                st.markdown("**Top contributing features:**")
+                st.table([
+                    {"Feature": f, "Importance": f"{imp:.4f}", "Indicates": d}
+                    for f, imp, d in rf_top
+                ])
+            else:
+                st.info("No recognised training vocabulary found in this email.")
+
+        with col_db:
+            st.subheader("DistilBERT")
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Prediction", db_pred.upper())
+            m2.metric("Confidence", f"{db_conf:.4f}")
+            m3.metric("Latency", f"{db_latency:.2f} ms")
+            if db_top:
+                st.markdown("**Top salient tokens (gradient x input):**")
+                st.table([
+                    {"Token": t, "Saliency": f"{s:.4f}"} for t, s in db_top
+                ])
+            else:
+                st.info("No salient tokens found.")
+
+        st.divider()
+        if rf_pred == db_pred:
+            st.success(f"Both models agree: **{rf_pred.upper()}**")
+        else:
+            st.warning(
+                f"Models disagree — Random Forest says **{rf_pred}**, "
+                f"DistilBERT says **{db_pred}**"
+            )
+
+        speed_ratio = db_latency / rf_latency if rf_latency > 0 else 0
+        st.caption(f"Random Forest is {speed_ratio:.1f}x faster than DistilBERT on this email.")
+else:
+    st.info("Paste an email above, or upload a .txt file, then click Analyse.")
